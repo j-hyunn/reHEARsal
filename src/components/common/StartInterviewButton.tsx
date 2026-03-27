@@ -1,25 +1,38 @@
 "use client";
 
-import Link from "next/link";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils/index";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import NewInterviewDialog from "@/components/interview/NewInterviewDialog";
+import type { UserDocument } from "@/lib/supabase/queries/documents";
 
 interface StartInterviewButtonProps {
   hasResume: boolean;
+  documents: UserDocument[];
 }
 
-export default function StartInterviewButton({ hasResume }: StartInterviewButtonProps) {
-  if (hasResume) {
-    return (
-      <Link href="/setup" className={cn(buttonVariants({ size: "lg" }), "w-full")}>
-        새 면접 시작하기
-      </Link>
-    );
-  }
+export default function StartInterviewButton({
+  hasResume,
+  documents,
+}: StartInterviewButtonProps) {
+  const [open, setOpen] = useState(false);
 
   return (
-    <Button size="lg" disabled className="w-full">
-      새 면접 시작하기
-    </Button>
+    <>
+      <Button
+        size="sm"
+        disabled={!hasResume}
+        onClick={() => setOpen(true)}
+      >
+        새 면접 추가하기
+      </Button>
+
+      {hasResume && (
+        <NewInterviewDialog
+          open={open}
+          onOpenChange={setOpen}
+          documents={documents}
+        />
+      )}
+    </>
   );
 }

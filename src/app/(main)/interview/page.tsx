@@ -97,16 +97,16 @@ export default async function InterviewPage() {
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6 space-y-8">
       {/* Start new interview */}
-      <div className="space-y-3">
-        <div>
+      <div className="flex items-center justify-between gap-4">
+        <div className="space-y-1">
           <h1 className="text-xl font-semibold">모의 인터뷰</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground">
             {hasResume
               ? "JD와 페르소나를 설정하고 면접을 시작하세요."
               : "이력서를 먼저 업로드해야 면접을 시작할 수 있습니다."}
           </p>
         </div>
-        <StartInterviewButton hasResume={hasResume} />
+        <StartInterviewButton hasResume={hasResume} documents={documents} />
       </div>
 
       {/* Interview history */}
