@@ -14,7 +14,7 @@ export default async function SettingsPage() {
   const avatarUrl = user.user_metadata?.avatar_url ?? null;
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-6 py-10 space-y-10">
+    <div className="mx-auto w-full max-w-2xl px-4 py-6 space-y-10">
       <div>
         <h1 className="text-xl font-semibold">계정 설정</h1>
         <p className="text-sm text-muted-foreground mt-1">

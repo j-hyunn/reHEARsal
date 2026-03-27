@@ -30,7 +30,7 @@ function SessionCard({ session }: { session: InterviewSession }) {
   const isCompleted = session.status === "completed";
 
   return (
-    <Card size="sm">
+    <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between gap-2">
           <span className="text-sm">
@@ -95,7 +95,7 @@ export default async function InterviewPage() {
   const hasResume = documents.some((d) => d.type === "resume");
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-6 py-10 space-y-8">
+    <div className="mx-auto w-full max-w-2xl px-4 py-6 space-y-8">
       {/* Start new interview */}
       <div className="space-y-3">
         <div>

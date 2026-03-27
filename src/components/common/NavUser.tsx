@@ -58,49 +58,51 @@ export function NavUser({ name, email, avatarUrl }: NavUserProps) {
     <SidebarMenu>
       <SidebarMenuItem>
         <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <SidebarMenuButton
-                size="lg"
-                className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-              />
-            }
-          >
-            <Avatar size="sm">
-              {avatarUrl && <AvatarImage src={avatarUrl} alt={name} />}
-              <AvatarFallback>{getInitials(name)}</AvatarFallback>
-            </Avatar>
-            <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-              <span className="truncate font-medium">{name}</span>
-              <span className="truncate text-xs text-muted-foreground">{email}</span>
-            </div>
-            <ChevronsUpDownIcon className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
+          <DropdownMenuTrigger asChild>
+            <SidebarMenuButton
+              size="lg"
+              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+            >
+              <Avatar className="h-8 w-8 rounded-lg">
+                {avatarUrl && <AvatarImage src={avatarUrl} alt={name} />}
+                <AvatarFallback className="rounded-lg">{getInitials(name)}</AvatarFallback>
+              </Avatar>
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-medium">{name}</span>
+                <span className="truncate text-xs text-muted-foreground">{email}</span>
+              </div>
+              <ChevronsUpDownIcon className="ml-auto size-4" />
+            </SidebarMenuButton>
           </DropdownMenuTrigger>
 
           <DropdownMenuContent
             side={isMobile ? "bottom" : "right"}
             align="end"
             sideOffset={4}
+            className="w-56"
           >
-            <DropdownMenuGroup>
-              <DropdownMenuLabel>
-                <div className="flex items-center gap-2 py-1">
-                  <Avatar size="sm">
-                    {avatarUrl && <AvatarImage src={avatarUrl} alt={name} />}
-                    <AvatarFallback>{getInitials(name)}</AvatarFallback>
-                  </Avatar>
-                  <div className="grid text-left text-sm leading-tight">
-                    <span className="truncate font-medium">{name}</span>
-                    <span className="truncate text-xs text-muted-foreground">{email}</span>
-                  </div>
+            <DropdownMenuLabel className="p-0 font-normal">
+              <div className="flex items-center gap-2 px-1 py-1.5">
+                <Avatar className="h-8 w-8 rounded-lg">
+                  {avatarUrl && <AvatarImage src={avatarUrl} alt={name} />}
+                  <AvatarFallback className="rounded-lg">{getInitials(name)}</AvatarFallback>
+                </Avatar>
+                <div className="grid text-left text-sm leading-tight">
+                  <span className="truncate font-medium">{name}</span>
+                  <span className="truncate text-xs text-muted-foreground">{email}</span>
                 </div>
-              </DropdownMenuLabel>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem asChild>
+                <Link href="/settings" className="gap-2">
+                  <SettingsIcon />
+                  계정 설정
+                </Link>
+              </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="gap-2" render={<Link href="/settings" />}>
-              <SettingsIcon />
-              계정 설정
-            </DropdownMenuItem>
             <DropdownMenuItem
               disabled={isPending}
               onClick={handleSignOut}

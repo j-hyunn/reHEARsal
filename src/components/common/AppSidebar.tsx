@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileTextIcon, MessageSquareIcon } from "lucide-react";
+import { FileTextIcon, MessageSquareIcon, UserIcon } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -22,6 +22,11 @@ const navMain = [
   {
     title: "내 정보",
     items: [
+      {
+        title: "내 소개",
+        href: "/profile",
+        icon: UserIcon,
+      },
       {
         title: "문서 관리",
         href: "/resume",
@@ -53,13 +58,9 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
   const pathname = usePathname();
 
   return (
-    <Sidebar {...props}>
+    <Sidebar variant="inset" {...props}>
       <SidebarHeader className="p-2">
-        <NavUser
-          name={user.name}
-          email={user.email}
-          avatarUrl={user.avatarUrl}
-        />
+        <NavUser name={user.name} email={user.email} avatarUrl={user.avatarUrl} />
       </SidebarHeader>
 
       <SidebarContent>
@@ -73,10 +74,12 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
                     <SidebarMenuButton
                       isActive={pathname === item.href}
                       tooltip={item.title}
-                      render={<Link href={item.href} />}
+                      asChild
                     >
-                      <item.icon />
-                      <span>{item.title}</span>
+                      <Link href={item.href}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}

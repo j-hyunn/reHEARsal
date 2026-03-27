@@ -13,7 +13,7 @@ export default async function ResumePage() {
   const gitDocs = documents.filter((d) => d.type === "git");
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-6 py-10 space-y-10">
+    <div className="mx-auto w-full max-w-2xl px-4 py-6 space-y-10">
       <div>
         <h1 className="text-xl font-semibold">문서 관리</h1>
         <p className="text-sm text-muted-foreground mt-1">

@@ -17,6 +17,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "리허설",
   description: "JD와 이력서를 아는 AI 면접관과 모의면접",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({

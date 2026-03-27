@@ -45,7 +45,7 @@ export default function ProfileSection({ name, email, avatarUrl }: ProfileSectio
       <h2 className="text-sm font-semibold">프로필</h2>
 
       <div className="flex items-center gap-4">
-        <Avatar size="lg">
+        <Avatar className="h-16 w-16">
           {avatarUrl && <AvatarImage src={avatarUrl} alt={name} />}
           <AvatarFallback>{getInitials(name)}</AvatarFallback>
         </Avatar>

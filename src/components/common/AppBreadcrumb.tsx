@@ -17,9 +17,12 @@ interface BreadcrumbSegment {
   href?: string;
 }
 
-const ROOT: BreadcrumbSegment = { label: "reHEARsal", href: "/resume" };
+function getSegments(pathname: string, userName: string): BreadcrumbSegment[] {
+  const ROOT: BreadcrumbSegment = { label: userName, href: "/resume" };
 
-function getSegments(pathname: string): BreadcrumbSegment[] {
+  if (pathname.startsWith("/profile")) {
+    return [ROOT, { label: "내 소개" }];
+  }
   if (pathname.startsWith("/resume")) {
     return [ROOT, { label: "문서 관리" }];
   }
@@ -41,9 +44,13 @@ function getSegments(pathname: string): BreadcrumbSegment[] {
   return [];
 }
 
-export default function AppBreadcrumb() {
+interface AppBreadcrumbProps {
+  userName: string;
+}
+
+export default function AppBreadcrumb({ userName }: AppBreadcrumbProps) {
   const pathname = usePathname();
-  const segments = getSegments(pathname);
+  const segments = getSegments(pathname, userName);
 
   if (segments.length === 0) return null;
 
@@ -57,8 +64,8 @@ export default function AppBreadcrumb() {
             <React.Fragment key={segment.label}>
               <BreadcrumbItem className={!isLast ? "hidden md:block" : undefined}>
                 {!isLast && segment.href ? (
-                  <BreadcrumbLink render={<Link href={segment.href} />}>
-                    {segment.label}
+                  <BreadcrumbLink asChild>
+                    <Link href={segment.href}>{segment.label}</Link>
                   </BreadcrumbLink>
                 ) : (
                   <BreadcrumbPage>{segment.label}</BreadcrumbPage>

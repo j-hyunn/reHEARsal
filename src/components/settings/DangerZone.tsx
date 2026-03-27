@@ -52,7 +52,7 @@ export default function DangerZone() {
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent showCloseButton={false}>
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>계정을 삭제하시겠습니까?</DialogTitle>
             <DialogDescription>

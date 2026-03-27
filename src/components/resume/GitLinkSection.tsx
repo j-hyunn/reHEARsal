@@ -97,7 +97,7 @@ function GitLinkItem({ document }: { document: UserDocument }) {
           size="icon"
           onClick={handleDelete}
           disabled={isPending}
-          className="size-7 text-muted-foreground hover:text-destructive"
+          className="size-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
         >
           <XIcon className="size-3.5" />
           <span className="sr-only">삭제</span>

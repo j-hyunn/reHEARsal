@@ -35,8 +35,8 @@ export default function FileCard({ document, label }: FileCardProps) {
   });
 
   return (
-    <Card size="sm">
-      <CardContent className="flex items-center gap-3 py-1">
+    <Card className="shadow-none">
+      <CardContent className="flex items-center gap-3 pl-4 pr-1 py-1">
         <FileTextIcon className="size-5 shrink-0 text-muted-foreground" />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate">{fileName}</p>
@@ -47,7 +47,7 @@ export default function FileCard({ document, label }: FileCardProps) {
           size="icon"
           onClick={handleDelete}
           disabled={isPending}
-          className="shrink-0 text-muted-foreground hover:text-destructive"
+          className="shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
         >
           <Trash2Icon className="size-4" />
           <span className="sr-only">삭제</span>

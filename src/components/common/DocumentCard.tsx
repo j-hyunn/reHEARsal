@@ -10,7 +10,6 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-  CardAction,
 } from "@/components/ui/card";
 import { uploadDocumentAction, deleteDocumentAction } from "@/app/(main)/resume/actions";
 import type { UserDocument, DocumentType } from "@/lib/supabase/queries/documents";
@@ -69,52 +68,56 @@ export default function DocumentCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          {label}
-          {required && (
-            <Badge variant="secondary" className="text-xs">
-              필수
-            </Badge>
-          )}
-          {document && (
-            <Badge variant="outline" className="text-xs text-green-600 border-green-300">
-              업로드됨
-            </Badge>
-          )}
-        </CardTitle>
-        <CardDescription>{description}</CardDescription>
-        <CardAction>
-          {document ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleDelete}
-              disabled={isPending}
-              className="text-destructive hover:text-destructive"
-            >
-              {isPending ? "삭제 중..." : "삭제"}
-            </Button>
-          ) : (
-            <>
-              <input
-                ref={inputRef}
-                type="file"
-                accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                className="hidden"
-                onChange={handleUpload}
-                disabled={isPending}
-              />
+        <div className="flex items-start justify-between gap-2">
+          <div className="space-y-1">
+            <CardTitle className="flex items-center gap-2">
+              {label}
+              {required && (
+                <Badge variant="secondary" className="text-xs">
+                  필수
+                </Badge>
+              )}
+              {document && (
+                <Badge variant="outline" className="text-xs text-green-600 border-green-300">
+                  업로드됨
+                </Badge>
+              )}
+            </CardTitle>
+            <CardDescription>{description}</CardDescription>
+          </div>
+          <div className="shrink-0">
+            {document ? (
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                onClick={() => inputRef.current?.click()}
+                onClick={handleDelete}
                 disabled={isPending}
+                className="text-destructive hover:text-destructive"
               >
-                {isPending ? "업로드 중..." : "파일 선택"}
+                {isPending ? "삭제 중..." : "삭제"}
               </Button>
-            </>
-          )}
-        </CardAction>
+            ) : (
+              <>
+                <input
+                  ref={inputRef}
+                  type="file"
+                  accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  className="hidden"
+                  onChange={handleUpload}
+                  disabled={isPending}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => inputRef.current?.click()}
+                  disabled={isPending}
+                >
+                  {isPending ? "업로드 중..." : "파일 선택"}
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
       </CardHeader>
       {document && (
         <CardContent>
