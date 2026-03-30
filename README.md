@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# reHEARsal
 
-## Getting Started
+AI 기반 모의 면접 서비스. JD와 이력서를 분석해 맞춤형 면접 질문을 생성하고, 실시간 대화형 면접 시뮬레이션 및 피드백 리포트를 제공합니다.
 
-First, run the development server:
+**[rehearsal-six.vercel.app](https://rehearsal-six.vercel.app)**
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## 주요 기능
+
+- **문서 분석**: 이력서, 포트폴리오, GitHub 링크를 업로드하면 AI가 분석해 면접 질문 세트 생성
+- **맞춤형 면접**: JD 기반 질문 + 실시간 follow-up 판단
+- **페르소나 선택**: 스타트업 실무진 / 대기업 인사팀 / 압박 면접관
+- **힌트 & 스킵**: 모범 답안 제시 또는 질문 건너뛰기 (평가에 감점 반영)
+- **피드백 리포트**: 답변별 논리성·구체성·직무적합성 점수 + 개선 방향
+
+## 기술 스택
+
+| 영역 | 기술 |
+|---|---|
+| Framework | Next.js 16 (App Router) |
+| UI | shadcn/ui |
+| AI Agent | Google ADK (TypeScript) |
+| AI Model | Gemini 2.5 Flash |
+| Database | Supabase |
+| Auth | Supabase Auth (Google OAuth) |
+| Storage | Supabase Storage |
+| Deploy | Vercel |
+
+## 로컬 실행
+
+### 1. 환경 변수 설정
+
+`.env.local` 파일 생성:
+
+```
+GOOGLE_API_KEY=
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. 의존성 설치 및 실행
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm install
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+[http://localhost:3000](http://localhost:3000)에서 확인
 
-## Learn More
+## 에이전트 플로우
 
-To learn more about Next.js, take a look at the following resources:
+```
+[면접 시작]
+  analysis_agent → JD + 이력서 분석, 질문 세트 생성
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+[면접 중]
+  interview_agent → 답변 수신, follow-up 판단, 스트리밍 응답
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+[면접 종료]
+  evaluation_agent → 전체 대화 분석, 질문별 점수 및 피드백 리포트 생성
+```
