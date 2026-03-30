@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { signInWithGoogle } from "@/lib/supabase/auth.client";
@@ -73,7 +74,17 @@ export default function LoginPage() {
           </svg>
           {isPending ? "로그인 중..." : "Google로 계속하기"}
         </Button>
-        <p className="text-sm text-muted-foreground">Google 계정으로 바로 시작</p>
+        <p className="text-xs text-muted-foreground text-center max-w-xs leading-relaxed">
+          로그인 시{" "}
+          <Link href="/terms" className="underline underline-offset-2 hover:text-foreground">
+            이용약관
+          </Link>
+          {" "}및{" "}
+          <Link href="/privacy" className="underline underline-offset-2 hover:text-foreground">
+            개인정보 처리방침
+          </Link>
+          에 동의한 것으로 간주합니다.
+        </p>
       </div>
     </main>
   );
