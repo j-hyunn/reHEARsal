@@ -109,6 +109,29 @@ export async function upsertGitDocument(
 }
 
 /**
+ * Returns documents matching the given IDs.
+ * RLS ensures only the owner's documents are returned.
+ */
+export async function getDocumentsByIds(ids: string[]): Promise<UserDocument[]> {
+  if (ids.length === 0) return []
+
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('user_documents')
+    .select('*')
+    .in('id', ids)
+
+  if (error) {
+    throw new Error(
+      `Failed to load documents: ${error.message}. Please refresh the page and try again.`
+    )
+  }
+
+  return data
+}
+
+/**
  * Deletes a document from both the database and Storage simultaneously.
  * Both operations must succeed — if either fails, an error is thrown.
  *

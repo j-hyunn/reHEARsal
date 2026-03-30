@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { createInterviewSessionAction } from "@/app/(main)/interview/actions";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { MultiCombobox, type ComboboxOption } from "@/components/ui/combobox";
 import {
   Select,
   SelectContent,
@@ -30,22 +33,33 @@ interface NewInterviewDialogProps {
 
 type JdInputMode = "link" | "text";
 
+function toOptions(docs: UserDocument[]): ComboboxOption[] {
+  return docs.map((d) => ({ value: d.id, label: d.file_name ?? d.id }));
+}
+
 export default function NewInterviewDialog({
   open,
   onOpenChange,
   documents,
 }: NewInterviewDialogProps) {
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
   // JD
   const [jdMode, setJdMode] = useState<JdInputMode>("link");
   const [jdLink, setJdLink] = useState("");
   const [jdText, setJdText] = useState("");
 
-  // Documents (Single select for now as per "Select" request)
-  const [resumeId, setResumeId] = useState("");
-  const [portfolioId, setPortfolioId] = useState("");
-  const [githubId, setGithubId] = useState("");
+  // Documents — multi-select
+  const [resumeIds, setResumeIds] = useState<string[]>([]);
+  const [portfolioIds, setPortfolioIds] = useState<string[]>([]);
+  const [githubIds, setGithubIds] = useState<string[]>([]);
+
+  // Duration
+  const [duration, setDuration] = useState<"1" | "30" | "60" | "90" | "">("");
+
+  // Persona
+  const [persona, setPersona] = useState<"startup" | "enterprise" | "pressure" | "">("");
 
   // Optional
   const [referenceLink, setReferenceLink] = useState("");
@@ -54,20 +68,21 @@ export default function NewInterviewDialog({
   const portfolios = documents.filter((d) => d.type === "portfolio");
   const githubDocs = documents.filter((d) => d.type === "git");
 
-  // Determine if JD is filled
-  const jdFilled =
-    jdMode === "link" ? jdLink.trim().length > 0 : jdText.trim().length > 0;
+  const resumeOptions = toOptions(resumes);
+  const portfolioOptions = toOptions(portfolios);
+  const githubOptions = toOptions(githubDocs);
 
-  // All required fields filled
-  const canStart = jdFilled && resumeId !== "" && portfolioId !== "";
+  const canStart = resumeIds.length > 0 && persona !== "" && duration !== "";
 
   function handleReset() {
     setJdMode("link");
     setJdLink("");
     setJdText("");
-    setResumeId("");
-    setPortfolioId("");
-    setGithubId("");
+    setResumeIds([]);
+    setPortfolioIds([]);
+    setGithubIds([]);
+    setDuration("");
+    setPersona("");
     setReferenceLink("");
   }
 
@@ -79,22 +94,25 @@ export default function NewInterviewDialog({
   function handleStart() {
     if (!canStart) return;
 
-    const params = new URLSearchParams();
-    params.set("resumeId", resumeId);
-    params.set("portfolioId", portfolioId);
-    if (jdMode === "link") {
-      params.set("jdLink", jdLink);
-    } else {
-      params.set("jdText", jdText);
-    }
-    if (githubId) {
-      const doc = githubDocs.find((d) => d.id === githubId);
-      if (doc?.file_url) params.set("githubUrl", doc.file_url);
-    }
-    if (referenceLink.trim()) params.set("referenceLink", referenceLink.trim());
+    const jdContent =
+      jdMode === "link" ? jdLink.trim() : jdText.trim();
 
-    router.push(`/setup?${params.toString()}`);
-    handleOpenChange(false);
+    startTransition(async () => {
+      const result = await createInterviewSessionAction({
+        jdText: jdContent,
+        persona: persona as "startup" | "enterprise" | "pressure",
+        durationMinutes: Number(duration),
+        resumeIds: [...resumeIds, ...portfolioIds, ...githubIds],
+      });
+
+      if ("error" in result) {
+        toast.error(result.error);
+        return;
+      }
+
+      handleOpenChange(false);
+      router.push(`/interview/${result.sessionId}`);
+    });
   }
 
   return (
@@ -105,7 +123,64 @@ export default function NewInterviewDialog({
         </DialogHeader>
 
         <div className="space-y-6 py-2">
-          {/* 1. JD */}
+          {/* 1. Persona */}
+          <section className="space-y-2">
+            <label className="text-sm font-medium">
+              면접관 페르소나
+              <span className="ml-1 text-xs text-destructive font-normal">
+                *필수
+              </span>
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {(
+                [
+                  { value: "startup", label: "스타트업 실무진", desc: "실용적이고 직설적" },
+                  { value: "enterprise", label: "대기업 인사팀", desc: "체계적이고 형식적" },
+                  { value: "pressure", label: "압박 면접관", desc: "날카롭고 집요함" },
+                ] as const
+              ).map((p) => (
+                <button
+                  key={p.value}
+                  type="button"
+                  onClick={() => setPersona(p.value)}
+                  className={cn(
+                    "flex flex-col items-start gap-0.5 rounded-lg border p-3 text-left transition-colors",
+                    persona === p.value
+                      ? "border-primary bg-accent text-primary"
+                      : "border-border hover:bg-muted"
+                  )}
+                >
+                  <span className="text-xs font-medium">{p.label}</span>
+                  <span className={cn("text-xs", persona === p.value ? "text-primary/70" : "text-muted-foreground")}>
+                    {p.desc}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {/* 2. Duration */}
+          <section className="space-y-2">
+            <label className="text-sm font-medium">
+              면접 시간
+              <span className="ml-1 text-xs text-destructive font-normal">
+                *필수
+              </span>
+            </label>
+            <Select value={duration} onValueChange={(v) => setDuration(v as "1" | "30" | "60" | "90")}>
+              <SelectTrigger>
+                <SelectValue placeholder="면접 시간을 선택하세요" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">1분 (테스트)</SelectItem>
+                <SelectItem value="30">30분</SelectItem>
+                <SelectItem value="60">60분</SelectItem>
+                <SelectItem value="90">90분</SelectItem>
+              </SelectContent>
+            </Select>
+          </section>
+
+          {/* 3. JD */}
           <section className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium">
@@ -141,7 +216,6 @@ export default function NewInterviewDialog({
                 </button>
               </div>
             </div>
-
             {jdMode === "text" ? (
               <Textarea
                 placeholder="JD 내용을 여기에 붙여넣으세요."
@@ -159,7 +233,7 @@ export default function NewInterviewDialog({
             )}
           </section>
 
-          {/* 2. Resume */}
+          {/* 3. Resume */}
           <section className="space-y-2">
             <label className="text-sm font-medium">
               이력서 / 경력기술서
@@ -172,50 +246,38 @@ export default function NewInterviewDialog({
                 저장된 이력서가 없습니다. 문서 관리에서 먼저 업로드해 주세요.
               </p>
             ) : (
-              <Select value={resumeId} onValueChange={setResumeId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="이력서를 선택하세요" />
-                </SelectTrigger>
-                <SelectContent>
-                  {resumes.map((doc) => (
-                    <SelectItem key={doc.id} value={doc.id}>
-                      {doc.file_name ?? doc.id}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <MultiCombobox
+                options={resumeOptions}
+                value={resumeIds}
+                onValueChange={setResumeIds}
+                placeholder="이력서를 선택하세요"
+              />
             )}
           </section>
 
-          {/* 3. Portfolio */}
+          {/* 4. Portfolio */}
           <section className="space-y-2">
             <label className="text-sm font-medium">
               포트폴리오
-              <span className="ml-1 text-xs text-destructive font-normal">
-                *필수
+              <span className="ml-1 text-xs text-muted-foreground font-normal">
+                (선택)
               </span>
             </label>
             {portfolios.length === 0 ? (
               <p className="text-sm text-muted-foreground py-2">
-                저장된 포트폴리오가 없습니다. 문서 관리에서 먼저 업로드해 주세요.
+                저장된 포트폴리오가 없습니다.
               </p>
             ) : (
-              <Select value={portfolioId} onValueChange={setPortfolioId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="포트폴리오를 선택하세요" />
-                </SelectTrigger>
-                <SelectContent>
-                  {portfolios.map((doc) => (
-                    <SelectItem key={doc.id} value={doc.id}>
-                      {doc.file_name ?? doc.id}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <MultiCombobox
+                options={portfolioOptions}
+                value={portfolioIds}
+                onValueChange={setPortfolioIds}
+                placeholder="포트폴리오를 선택하세요"
+              />
             )}
           </section>
 
-          {/* 4. GitHub */}
+          {/* 5. GitHub */}
           <section className="space-y-2">
             <label className="text-sm font-medium">
               GitHub 링크
@@ -228,22 +290,16 @@ export default function NewInterviewDialog({
                 저장된 GitHub 링크가 없습니다.
               </p>
             ) : (
-              <Select value={githubId} onValueChange={setGithubId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="GitHub 링크를 선택하세요" />
-                </SelectTrigger>
-                <SelectContent>
-                  {githubDocs.map((doc) => (
-                    <SelectItem key={doc.id} value={doc.id}>
-                      {doc.file_url ?? doc.id}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <MultiCombobox
+                options={githubOptions}
+                value={githubIds}
+                onValueChange={setGithubIds}
+                placeholder="GitHub 링크를 선택하세요"
+              />
             )}
           </section>
 
-          {/* 5. Reference link */}
+          {/* 6. Reference link */}
           <section className="space-y-2">
             <label className="text-sm font-medium">
               참고 자료
@@ -264,8 +320,8 @@ export default function NewInterviewDialog({
           <Button variant="outline" onClick={() => handleOpenChange(false)}>
             취소
           </Button>
-          <Button onClick={handleStart} disabled={!canStart}>
-            면접 시작하기
+          <Button onClick={handleStart} disabled={!canStart || isPending}>
+            {isPending ? "생성 중..." : "면접 시작하기"}
           </Button>
         </DialogFooter>
       </DialogContent>

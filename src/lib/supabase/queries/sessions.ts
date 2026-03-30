@@ -9,6 +9,10 @@ export interface InterviewSession {
   jd_text: string | null
   persona: Persona | null
   duration_minutes: number | null
+  remaining_seconds: number | null
+  resume_ids: string[] | null
+  analysis_json: Record<string, unknown> | null
+  adk_session_id: string | null
   started_at: string | null
   ended_at: string | null
   status: SessionStatus | null
@@ -20,12 +24,17 @@ export interface CreateSessionInput {
   jd_text: string
   persona: Persona
   duration_minutes: number
+  status?: SessionStatus
+  resume_ids?: string[]
 }
 
 export interface UpdateSessionInput {
   started_at?: string
   ended_at?: string
   status?: SessionStatus
+  remaining_seconds?: number | null
+  analysis_json?: Record<string, unknown>
+  adk_session_id?: string
 }
 
 /**
@@ -95,6 +104,25 @@ export async function updateSession(
   }
 
   return data
+}
+
+/**
+ * Deletes multiple sessions by ID.
+ * RLS ensures only the owner's sessions are deleted.
+ */
+export async function deleteSessions(sessionIds: string[]): Promise<void> {
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('interview_sessions')
+    .delete()
+    .in('id', sessionIds)
+
+  if (error) {
+    throw new Error(
+      `Failed to delete sessions: ${error.message}. Please try again.`
+    )
+  }
 }
 
 /**
