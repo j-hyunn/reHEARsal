@@ -89,7 +89,7 @@ export default function SessionRow({ session }: SessionRowProps) {
           <DropdownMenuContent align="end">
             <DropdownMenuItem>이름 변경</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive">삭제</DropdownMenuItem>
+            <DropdownMenuItem className="text-destructive focus:text-destructive">삭제</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </TableCell>
