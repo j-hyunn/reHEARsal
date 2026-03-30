@@ -59,7 +59,7 @@ export default function NewInterviewDialog({
   const [duration, setDuration] = useState<"1" | "30" | "60" | "90" | "">("");
 
   // Persona
-  const [persona, setPersona] = useState<"startup" | "enterprise" | "pressure" | "">("");
+  const [persona, setPersona] = useState<"explorer" | "pressure" | "">("");
 
   // Optional
   const [referenceLink, setReferenceLink] = useState("");
@@ -100,7 +100,7 @@ export default function NewInterviewDialog({
     startTransition(async () => {
       const result = await createInterviewSessionAction({
         jdText: jdContent,
-        persona: persona as "startup" | "enterprise" | "pressure",
+        persona: persona as "explorer" | "pressure",
         durationMinutes: Number(duration),
         resumeIds: [...resumeIds, ...portfolioIds, ...githubIds],
       });
@@ -131,12 +131,11 @@ export default function NewInterviewDialog({
                 *필수
               </span>
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {(
                 [
-                  { value: "startup", label: "스타트업 실무진", desc: "실용적이고 직설적" },
-                  { value: "enterprise", label: "대기업 인사팀", desc: "체계적이고 형식적" },
-                  { value: "pressure", label: "압박 면접관", desc: "날카롭고 집요함" },
+                  { value: "explorer", label: "경험 탐색형", desc: "편안하고 대화적인 분위기" },
+                  { value: "pressure", label: "심층 압박형", desc: "논리적 검증, 날카로운 꼬리질문" },
                 ] as const
               ).map((p) => (
                 <button

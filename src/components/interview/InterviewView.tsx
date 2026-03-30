@@ -18,9 +18,8 @@ import type { InterviewSession } from "@/lib/supabase/queries/sessions";
 import type { InterviewMessage } from "@/lib/supabase/queries/messages";
 
 const PERSONA_LABELS: Record<string, string> = {
-  startup: "스타트업 실무진",
-  enterprise: "대기업 인사팀",
-  pressure: "압박 면접관",
+  explorer: "경험 탐색형",
+  pressure: "심층 압박형",
 };
 
 interface Message {
