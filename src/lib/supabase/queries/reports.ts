@@ -17,11 +17,6 @@ export interface AnswerReport {
   model_answer: string
 }
 
-export interface ImprovementItem {
-  question_id: string
-  reason: string
-  improvement: string
-}
 
 export interface RetryQuestion {
   question_id: string
@@ -31,8 +26,9 @@ export interface RetryQuestion {
 export interface ReportJson {
   total_score: number
   summary: string
+  strengths: string
+  improvements: string
   answers: AnswerReport[]
-  top3_improvements: ImprovementItem[]
   retry_questions: RetryQuestion[]
 }
 

@@ -3,6 +3,8 @@ import type { AnalysisOutput } from "./analysis";
 export interface EvaluationOutput {
   total_score: number;
   summary: string;
+  strengths: string;
+  improvements: string;
   answers: Array<{
     question_id: string;
     question: string;
@@ -15,11 +17,6 @@ export interface EvaluationOutput {
     average: number;
     feedback: string;
     model_answer: string;
-  }>;
-  top3_improvements: Array<{
-    question_id: string;
-    reason: string;
-    improvement: string;
   }>;
   retry_questions: Array<{
     question_id: string;
@@ -84,16 +81,20 @@ ${groupedText}
 ## 지시사항
 1. 각 질문 그룹(question_id)마다 answers 항목을 하나씩 생성하세요.
 2. 각 질문의 intent와 good_answer_tips를 기준으로 채점하세요.
-3. 각 답변에 대해 건설적인 피드백과 모범 답안을 제시하세요.
-4. top3_improvements: 가장 개선이 필요한 3개 답변을 선정하세요.
+3. feedback: 각 점수 영역(논리성·구체성·직무 적합성)의 채점 근거를 포함하되, 각 영역을 별도로 나열하지 말고 자연스러운 한 문단으로 작성하세요. 잘한 점과 부족한 점을 균형 있게 서술하고, 마지막 문장에 핵심 개선 방향을 제시하세요.
+4. model_answer: 실제 면접에서 사용할 수 있는 수준의 구체적인 모범 답안을 제시하세요. 지원자의 배경(이력서)을 반영해 작성하세요.
 5. retry_questions: 다시 연습해볼 질문 목록을 선정하세요.
 6. total_score는 모든 답변의 average 점수의 평균입니다.
-7. summary는 전체 면접에 대한 종합 평가 (3~5문장)이며, 모범 답안 참조·건너뛰기 사용 여부도 언급하세요.
+7. summary: 전체 면접에 대한 종합 평가를 3~5문장으로 작성하세요. 모범 답안 참조·건너뛰기 사용 여부도 언급하세요.
+8. strengths: 면접 전반에서 지원자가 잘한 점을 3~5문장으로 서술하세요. 특정 질문을 언급하더라도 전체 흐름 속에서의 강점을 중심으로 작성하세요.
+9. improvements: 면접 전반에서 지원자가 개선해야 할 포인트를 3~5문장으로 서술하세요. 부족했던 부분과 구체적인 개선 방향을 중심으로 작성하세요.
 
 ## 출력 형식 (반드시 유효한 JSON만 반환, 마크다운 코드 블록 없이)
 {
   "total_score": 82,
-  "summary": "전체 면접 종합 평가",
+  "summary": "전체 면접 종합 평가 (3~5문장)",
+  "strengths": "면접 전반에서 잘한 점 (3~5문장)",
+  "improvements": "면접 전반에서 개선할 점 (3~5문장)",
   "answers": [
     {
       "question_id": "q1",
@@ -104,9 +105,6 @@ ${groupedText}
       "feedback": "이 답변에 대한 피드백",
       "model_answer": "더 나은 답변 예시"
     }
-  ],
-  "top3_improvements": [
-    { "question_id": "q3", "reason": "개선이 필요한 이유", "improvement": "구체적인 개선 방향" }
   ],
   "retry_questions": [
     { "question_id": "q3", "question": "질문 내용" }
