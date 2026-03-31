@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \":*)",
+      "Bash(source /Users/jehyun/rehearsal/.env.local)",
+      "Bash(curl -s \"https://generativelanguage.googleapis.com/v1beta/models?key=$GOOGLE_API_KEY\")",
+      "Bash(vercel link:*)",
+      "Bash(vercel project:*)"
+    ]
+  }
+}

@@ -7,6 +7,11 @@ export interface AnswerScore {
   job_fit: number
 }
 
+export interface QaTurn {
+  speaker: "interviewer" | "user"
+  content: string
+}
+
 export interface AnswerReport {
   question_id: string
   question: string
@@ -15,6 +20,7 @@ export interface AnswerReport {
   average: number
   feedback: string
   model_answer: string
+  turns?: QaTurn[]
 }
 
 

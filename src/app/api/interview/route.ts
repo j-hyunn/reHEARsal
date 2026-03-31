@@ -447,6 +447,15 @@ export async function POST(req: Request) {
       return Response.json({ error: "평가 결과 파싱 실패. 다시 시도해주세요." }, { status: 500 });
     }
 
+    // Merge turns from qaGroups into each answer for display purposes (no extra AI calls).
+    const qaGroupMap = new Map(qaGroups.map((g) => [g.question_id, g]));
+    if (Array.isArray(reportJson.answers)) {
+      reportJson.answers = reportJson.answers.map((a: { question_id: string }) => ({
+        ...a,
+        turns: qaGroupMap.get(a.question_id)?.turns ?? [],
+      }));
+    }
+
     const { createClient } = await import("@/lib/supabase/server");
     const supabase = await createClient();
     await supabase.from("interview_reports").upsert({

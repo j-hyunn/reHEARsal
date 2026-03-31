@@ -11,7 +11,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
-import type { ReportJson } from "@/lib/supabase/queries/reports";
+import type { ReportJson, QaTurn } from "@/lib/supabase/queries/reports";
 
 const SCORE_LABELS: Record<string, string> = {
   logic: "논리성",
@@ -188,34 +188,89 @@ interface AnswerPanelProps {
   index: number;
 }
 
+// Pairs consecutive interviewer→user turns into exchanges.
+function groupTurnsIntoExchanges(turns: QaTurn[]): Array<{ question: string; answer: string }> {
+  const exchanges: Array<{ question: string; answer: string }> = [];
+  let i = 0;
+  while (i < turns.length) {
+    if (turns[i].speaker === "interviewer") {
+      const question = turns[i].content;
+      const answer = turns[i + 1]?.speaker === "user" ? turns[i + 1].content : "";
+      exchanges.push({ question, answer });
+      i += answer ? 2 : 1;
+    } else {
+      i++;
+    }
+  }
+  return exchanges;
+}
+
 function AnswerPanel({ answer, index }: AnswerPanelProps) {
+  const exchanges =
+    answer.turns && answer.turns.length > 0
+      ? groupTurnsIntoExchanges(answer.turns)
+      : null;
+
   return (
     <>
-      {/* Question */}
+      {/* Question header */}
       <div className="space-y-1">
         <p className="text-xs text-muted-foreground">Q{index + 1}</p>
         <h2 className="text-base font-semibold leading-relaxed">{answer.question}</h2>
       </div>
 
-      {/* My answer — collapsed by default */}
-      <Card>
-        <CardContent className="p-0">
-          <Accordion type="single" collapsible>
-            <AccordionItem value="answer" className="border-none">
-              <AccordionTrigger className="px-4 py-3 text-sm font-semibold hover:no-underline">
-                내 답변
-              </AccordionTrigger>
-              <AccordionContent className="px-4 pb-4">
-                <div className="rounded-lg bg-primary/5 px-3 py-2 text-sm text-muted-foreground leading-relaxed">
-                  {answer.answer}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        </CardContent>
-      </Card>
+      {/* Conversation turns (split per exchange) or fallback single answer */}
+      {exchanges ? (
+        <div className="space-y-3">
+          {exchanges.map((ex, i) => (
+            <Card key={i}>
+              <CardContent className="p-0">
+                <Accordion type="single" collapsible>
+                  <AccordionItem value="answer" className="border-none">
+                    <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                      <div className="flex flex-col items-start gap-1 text-left">
+                        <span className="text-[11px] text-muted-foreground">
+                          {i === 0 ? "본 질문" : `꼬리질문 ${i}`}
+                        </span>
+                        <span className="text-sm font-medium leading-snug">{ex.question}</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-4 pb-4">
+                      {ex.answer ? (
+                        <div className="rounded-lg bg-primary/5 px-3 py-2 text-sm text-muted-foreground leading-relaxed">
+                          {ex.answer}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground italic">답변 없음</p>
+                      )}
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        // Fallback for reports generated before turns were stored
+        <Card>
+          <CardContent className="p-0">
+            <Accordion type="single" collapsible>
+              <AccordionItem value="answer" className="border-none">
+                <AccordionTrigger className="px-4 py-3 text-sm font-semibold hover:no-underline">
+                  내 답변
+                </AccordionTrigger>
+                <AccordionContent className="px-4 pb-4">
+                  <div className="rounded-lg bg-primary/5 px-3 py-2 text-sm text-muted-foreground leading-relaxed">
+                    {answer.answer}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Scores + Feedback merged */}
+      {/* Scores + Feedback */}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">

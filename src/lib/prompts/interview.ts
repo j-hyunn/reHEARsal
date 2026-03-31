@@ -99,10 +99,11 @@ ${JSON.stringify(analysisJson, null, 2)}
 ${isClosingPhase ? "⚠️ 잔여 시간이 20% 미만입니다. 마무리 질문(closing)으로 전환하세요." : ""}
 4. 한 번에 하나의 질문만 하세요.
 5. 답변을 경청하고 자연스럽게 다음 질문으로 이어가세요.
+6. 다음 질문으로 넘어갈 때, "다음 질문으로 넘어가겠습니다"와 같이 예고만 하고 멈추지 마세요. 반드시 전환 멘트와 실제 질문을 하나의 message에 함께 포함하세요.
 
 ## 출력 형식 (반드시 유효한 JSON만 반환, 마크다운 코드 블록 없이)
 {
-  "message": "면접관이 말할 내용 (질문 또는 반응 + 다음 질문)",
+  "message": "면접관이 말할 내용. 반드시 전환 멘트와 실제 질문을 한 번에 포함할 것. 예: '좋습니다, 그럼 다음 질문 드리겠습니다. [질문 내용]?' — 절대 예고만 하고 멈추지 말 것.",
   "type": "question | followup | closing",
   "current_depth": 0,
   "next_question_id": "q2",
@@ -185,7 +186,7 @@ export function buildRespondPrompt(userAnswer: string): string {
   return `지원자의 답변: "${userAnswer}"
 
 위 답변을 바탕으로 다음 중 하나를 선택하세요:
-1. 답변이 충분하면 → 다음 질문으로 이동 (type: "question")
+1. 답변이 충분하면 → 다음 질문으로 이동 (type: "question"). 이때 message에 "다음 질문으로 넘어가겠습니다"라는 예고만 하지 말고, 전환 멘트와 실제 다음 질문을 함께 포함할 것.
 2. 답변이 불충분하거나 더 깊은 탐색이 필요하면 → 추가 질문 (type: "followup")
 3. 잔여 시간이 부족하면 → 마무리 질문 (type: "closing")
 
