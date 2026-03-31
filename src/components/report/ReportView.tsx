@@ -11,7 +11,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
-import type { ReportJson, QaTurn } from "@/lib/supabase/queries/reports";
+import type { ReportJson, QaTurn, ModelAnswerEntry } from "@/lib/supabase/queries/reports";
 
 const SCORE_LABELS: Record<string, string> = {
   logic: "논리성",
@@ -211,6 +211,17 @@ function AnswerPanel({ answer, index }: AnswerPanelProps) {
       ? groupTurnsIntoExchanges(answer.turns)
       : null;
 
+  // Resolve per-question model answers (new format) or fall back to legacy single model_answer
+  const modelAnswers: (ModelAnswerEntry | null)[] = (() => {
+    if (answer.model_answers && answer.model_answers.length > 0) {
+      return answer.model_answers;
+    }
+    if (answer.model_answer) {
+      return [{ question: answer.question, model_answer: answer.model_answer }];
+    }
+    return [];
+  })();
+
   return (
     <>
       {/* Question header */}
@@ -219,55 +230,12 @@ function AnswerPanel({ answer, index }: AnswerPanelProps) {
         <h2 className="text-base font-semibold leading-relaxed">{answer.question}</h2>
       </div>
 
-      {/* Conversation turns (split per exchange) or fallback single answer */}
-      {exchanges ? (
-        <div className="space-y-3">
-          {exchanges.map((ex, i) => (
-            <Card key={i}>
-              <CardContent className="p-0">
-                <Accordion type="single" collapsible>
-                  <AccordionItem value="answer" className="border-none">
-                    <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                      <div className="flex flex-col items-start gap-1 text-left">
-                        <span className="text-[11px] text-muted-foreground">
-                          {i === 0 ? "본 질문" : `꼬리질문 ${i}`}
-                        </span>
-                        <span className="text-sm font-medium leading-snug">{ex.question}</span>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="px-4 pb-4">
-                      {ex.answer ? (
-                        <div className="rounded-lg bg-primary/5 px-3 py-2 text-sm text-muted-foreground leading-relaxed">
-                          {ex.answer}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground italic">답변 없음</p>
-                      )}
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-              </CardContent>
-            </Card>
-          ))}
+      {/* Question intent */}
+      {answer.intent && (
+        <div className="rounded-lg border-l-2 border-primary/40 bg-muted/30 px-3 py-2 space-y-0.5">
+          <p className="text-[11px] font-semibold text-primary/70 uppercase tracking-wide">질문 의도</p>
+          <p className="text-sm text-muted-foreground leading-relaxed">{answer.intent}</p>
         </div>
-      ) : (
-        // Fallback for reports generated before turns were stored
-        <Card>
-          <CardContent className="p-0">
-            <Accordion type="single" collapsible>
-              <AccordionItem value="answer" className="border-none">
-                <AccordionTrigger className="px-4 py-3 text-sm font-semibold hover:no-underline">
-                  내 답변
-                </AccordionTrigger>
-                <AccordionContent className="px-4 pb-4">
-                  <div className="rounded-lg bg-primary/5 px-3 py-2 text-sm text-muted-foreground leading-relaxed">
-                    {answer.answer}
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          </CardContent>
-        </Card>
       )}
 
       {/* Scores + Feedback */}
@@ -292,15 +260,75 @@ function AnswerPanel({ answer, index }: AnswerPanelProps) {
         </CardContent>
       </Card>
 
-      {/* Model answer */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold">모범 답안</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm leading-relaxed text-muted-foreground">{answer.model_answer}</p>
-        </CardContent>
-      </Card>
+      {/* Question list + answers (with per-question model answer) */}
+      {exchanges ? (
+        <div className="space-y-3">
+          {exchanges.map((ex, i) => {
+            const modelEntry = modelAnswers[i] ?? null;
+            return (
+              <Card key={i}>
+                <CardContent className="p-0">
+                  <Accordion type="single" collapsible>
+                    <AccordionItem value="answer" className="border-none">
+                      <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                        <div className="flex flex-col items-start gap-1 text-left">
+                          <span className="text-[11px] text-muted-foreground">
+                            {i === 0 ? "본 질문" : `꼬리질문 ${i}`}
+                          </span>
+                          <span className="text-sm font-medium leading-snug">{ex.question}</span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-4 pb-4 space-y-3">
+                        {ex.answer ? (
+                          <div className="rounded-lg bg-primary/5 px-3 py-2 text-sm text-muted-foreground leading-relaxed">
+                            {ex.answer}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground italic">답변 없음</p>
+                        )}
+                        {modelEntry && (
+                          <div className="space-y-1.5">
+                            <p className="text-[11px] font-semibold text-muted-foreground">모범 답안</p>
+                            <div className="rounded-lg border bg-muted/40 px-3 py-2 text-sm leading-relaxed text-muted-foreground">
+                              {modelEntry.model_answer}
+                            </div>
+                          </div>
+                        )}
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      ) : (
+        // Fallback for reports generated before turns were stored
+        <Card>
+          <CardContent className="p-0">
+            <Accordion type="single" collapsible>
+              <AccordionItem value="answer" className="border-none">
+                <AccordionTrigger className="px-4 py-3 text-sm font-semibold hover:no-underline">
+                  내 답변
+                </AccordionTrigger>
+                <AccordionContent className="px-4 pb-4 space-y-3">
+                  <div className="rounded-lg bg-primary/5 px-3 py-2 text-sm text-muted-foreground leading-relaxed">
+                    {answer.answer}
+                  </div>
+                  {modelAnswers[0] && (
+                    <div className="space-y-1.5">
+                      <p className="text-[11px] font-semibold text-muted-foreground">모범 답안</p>
+                      <div className="rounded-lg border bg-muted/40 px-3 py-2 text-sm leading-relaxed text-muted-foreground">
+                        {modelAnswers[0].model_answer}
+                      </div>
+                    </div>
+                  )}
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </CardContent>
+        </Card>
+      )}
     </>
   );
 }

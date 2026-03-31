@@ -12,14 +12,22 @@ export interface QaTurn {
   content: string
 }
 
+export interface ModelAnswerEntry {
+  question: string
+  model_answer: string
+}
+
 export interface AnswerReport {
   question_id: string
   question: string
   answer: string
   scores: AnswerScore
   average: number
+  intent?: string
   feedback: string
-  model_answer: string
+  /** @deprecated use model_answers instead */
+  model_answer?: string
+  model_answers?: ModelAnswerEntry[]
   turns?: QaTurn[]
 }
 

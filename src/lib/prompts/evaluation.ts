@@ -15,8 +15,9 @@ export interface EvaluationOutput {
       job_fit: number;
     };
     average: number;
+    intent: string;
     feedback: string;
-    model_answer: string;
+    model_answers: Array<{ question: string; model_answer: string }>;
   }>;
   retry_questions: Array<{
     question_id: string;
@@ -81,8 +82,9 @@ ${groupedText}
 ## 지시사항
 1. 각 질문 그룹(question_id)마다 answers 항목을 하나씩 생성하세요.
 2. 각 질문의 intent와 good_answer_tips를 기준으로 채점하세요.
+2-1. intent: 해당 질문의 의도를 지원자가 이해할 수 있도록 1~2문장으로 풀어서 작성하세요. 입력된 intent 원문을 그대로 복사하지 말고, 면접관이 이 질문을 통해 무엇을 확인하려 했는지를 설명하세요.
 3. feedback: 각 점수 영역(논리성·구체성·직무 적합성)의 채점 근거를 포함하되, 각 영역을 별도로 나열하지 말고 자연스러운 한 문단으로 작성하세요. 잘한 점과 부족한 점을 균형 있게 서술하고, 마지막 문장에 핵심 개선 방향을 제시하세요.
-4. model_answer: 실제 면접에서 사용할 수 있는 수준의 구체적인 모범 답안을 제시하세요. 지원자의 배경(이력서)을 반영해 작성하세요.
+4. model_answers: 해당 질문 그룹 내 각 질문(본 질문 + 꼬리질문 순서대로)마다 모범 답안을 하나씩 작성하세요. question 필드에는 해당 질문 내용을 그대로, model_answer 필드에는 지원자 배경(이력서)을 반영한 구체적인 모범 답안을 작성하세요. 건너뛴 질문은 model_answers를 빈 배열로 설정하세요.
 5. retry_questions: 다시 연습해볼 질문 목록을 선정하세요.
 6. total_score는 모든 답변의 average 점수의 평균입니다.
 7. summary: 전체 면접에 대한 종합 평가를 3~5문장으로 작성하세요. 모범 답안 참조·건너뛰기 사용 여부도 언급하세요.
@@ -102,8 +104,12 @@ ${groupedText}
       "answer": "지원자 답변 요약",
       "scores": { "logic": 85, "specificity": 70, "job_fit": 90 },
       "average": 82,
+      "intent": "이 질문을 한 이유 (1~2문장)",
       "feedback": "이 답변에 대한 피드백",
-      "model_answer": "더 나은 답변 예시"
+      "model_answers": [
+        { "question": "본 질문 내용", "model_answer": "본 질문 모범 답안" },
+        { "question": "꼬리질문 1 내용", "model_answer": "꼬리질문 1 모범 답안" }
+      ]
     }
   ],
   "retry_questions": [
