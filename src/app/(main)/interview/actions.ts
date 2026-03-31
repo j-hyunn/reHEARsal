@@ -5,6 +5,7 @@ import { createSession, deleteSessions, updateSession } from "@/lib/supabase/que
 import type { Persona } from "@/lib/supabase/queries/sessions";
 
 interface CreateInterviewSessionInput {
+  title: string;
   jdText: string;
   persona: Persona;
   durationMinutes: number;
@@ -64,6 +65,7 @@ export async function createInterviewSessionAction(
   try {
     const session = await createSession({
       user_id: user.id,
+      title: input.title,
       jd_text: input.jdText,
       persona: input.persona,
       duration_minutes: input.durationMinutes,

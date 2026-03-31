@@ -14,8 +14,10 @@ import { getSession, updateSession } from "@/lib/supabase/queries/sessions";
 import { getDocumentsByIds } from "@/lib/supabase/queries/documents";
 import { getSessionMessages, createMessage } from "@/lib/supabase/queries/messages";
 import { env } from "@/lib/env";
+import { generateTtsBase64 } from "@/lib/tts";
 import { buildAnalysisPrompt, type AnalysisOutput, type UserProfileContext } from "@/lib/prompts/analysis";
 import { getUserProfile } from "@/lib/supabase/queries/profiles";
+import { getPersonaSettings } from "@/lib/supabase/queries/personaSettings";
 import { buildFirstQuestionPrompt, buildRespondPrompt, buildSkipPrompt, buildHintPrompt } from "@/lib/prompts/interview";
 import { buildEvaluationPrompt } from "@/lib/prompts/evaluation";
 import { sessionService, interviewRunner, APP_NAME } from "@/lib/agents/runners";
@@ -122,11 +124,16 @@ export async function POST(req: Request) {
     return new Response("Not Found", { status: 404 });
   }
 
-  // Fetch resume texts and user profile in parallel
-  const [documents, profileData] = await Promise.all([
+  // Fetch resume texts, user profile, and persona settings in parallel
+  const [documents, profileData, personaSettings] = await Promise.all([
     getDocumentsByIds(session.resume_ids ?? []),
     getUserProfile(user.id).catch(() => null),
+    getPersonaSettings(user.id).catch(() => []),
   ]);
+
+  const currentPersona = (session.persona ?? "explorer") as "explorer" | "pressure";
+  const customInstructions =
+    personaSettings.find((s) => s.persona === currentPersona)?.custom_instructions ?? "";
 
   // Build labeled document sections by type for richer prompt context.
   const documentSections = documents
@@ -179,13 +186,14 @@ export async function POST(req: Request) {
       userId: user.id,
       sessionId: adkSessionId,
       state: {
-        persona: session.persona ?? "startup",
+        persona: session.persona ?? "explorer",
         jdText: session.jd_text ?? "",
         resumeTexts,
         analysisJson,
         remainingSeconds: totalSeconds,
         totalSeconds,
         userProfile: userProfile ?? null,
+        customInstructions,
       },
     });
 
@@ -218,15 +226,18 @@ export async function POST(req: Request) {
     } catch { /* use raw text */ }
 
     const firstQuestion = analysisJson.questions[0];
-    await createMessage({
-      session_id: sessionId,
-      role: "interviewer",
-      content: firstMessage,
-      question_id: firstQuestion?.id,
-      depth: 0,
-    });
+    const [, audioBase64] = await Promise.all([
+      createMessage({
+        session_id: sessionId,
+        role: "interviewer",
+        content: firstMessage,
+        question_id: firstQuestion?.id,
+        depth: 0,
+      }),
+      generateTtsBase64(firstMessage),
+    ]);
 
-    return Response.json({ analysisJson, firstMessage });
+    return Response.json({ analysisJson, firstMessage, audioBase64 });
   }
 
   // ── RESPOND ──────────────────────────────────────────────────────────────
@@ -250,71 +261,44 @@ export async function POST(req: Request) {
       adkSessionId,
       userId: user.id,
       state: {
-        persona: session.persona ?? "startup",
+        persona: session.persona ?? "explorer",
         jdText: session.jd_text ?? "",
         resumeTexts,
         analysisJson,
         remainingSeconds: session.remaining_seconds ?? totalSeconds,
         totalSeconds,
         userProfile: userProfile ?? null,
+        customInstructions,
       },
       sessionId,
     });
 
-    // Stream the interview agent's response.
-    const stream = new ReadableStream({
-      async start(controller) {
-        const enc = new TextEncoder();
-        let accumulated = "";
-
-        try {
-          for await (const event of interviewRunner.runAsync({
-            userId: user.id,
-            sessionId: adkSessionId,
-            newMessage: {
-              role: "user",
-              parts: [{ text: buildRespondPrompt(agentUserMessage) }],
-            },
-          })) {
-            if (event.content?.parts) {
-              for (const part of event.content.parts) {
-                if (part.text && event.partial !== false) {
-                  accumulated += part.text;
-                  controller.enqueue(enc.encode(part.text));
-                }
-              }
-            }
-            if (isFinalResponse(event)) {
-              const final = stringifyContent(event);
-              // If we haven't been streaming partials, send the full response now.
-              if (!accumulated) {
-                accumulated = final;
-                controller.enqueue(enc.encode(final));
-              }
-            }
-          }
-        } finally {
-          // Extract message text and next_question_id from JSON wrapper if present, then save.
-          let savedContent = accumulated;
-          let nextQuestionId: string | undefined;
-          try {
-            const parsed = JSON.parse(extractJson(accumulated)) as { message: string; next_question_id?: string | null };
-            savedContent = parsed.message;
-            if (parsed.next_question_id) nextQuestionId = parsed.next_question_id;
-          } catch { /* use raw */ }
-
-          await createMessage({ session_id: sessionId, role: "interviewer", content: savedContent, question_id: nextQuestionId });
-          controller.close();
-        }
+    let accumulated = "";
+    for await (const event of interviewRunner.runAsync({
+      userId: user.id,
+      sessionId: adkSessionId,
+      newMessage: {
+        role: "user",
+        parts: [{ text: buildRespondPrompt(agentUserMessage) }],
       },
-    });
+    })) {
+      if (isFinalResponse(event)) accumulated = stringifyContent(event);
+    }
 
-    return new Response(stream, {
-      headers: {
-        "Content-Type": "text/plain; charset=utf-8",
-        "X-Content-Type-Options": "nosniff",
-      },
-    });
+    let message = accumulated;
+    let nextQuestionId: string | undefined;
+    try {
+      const parsed = JSON.parse(extractJson(accumulated)) as { message: string; next_question_id?: string | null };
+      message = parsed.message;
+      if (parsed.next_question_id) nextQuestionId = parsed.next_question_id;
+    } catch { /* use raw */ }
+
+    const [, audioBase64] = await Promise.all([
+      createMessage({ session_id: sessionId, role: "interviewer", content: message, question_id: nextQuestionId }),
+      generateTtsBase64(message),
+    ]);
+
+    return Response.json({ message, audioBase64 });
   }
 
   // ── HINT ─────────────────────────────────────────────────────────────────
@@ -362,57 +346,41 @@ export async function POST(req: Request) {
       adkSessionId,
       userId: user.id,
       state: {
-        persona: session.persona ?? "startup",
+        persona: session.persona ?? "explorer",
         jdText: session.jd_text ?? "",
         resumeTexts,
         analysisJson,
         remainingSeconds: session.remaining_seconds ?? totalSeconds,
         totalSeconds,
         userProfile: userProfile ?? null,
+        customInstructions,
       },
       sessionId,
     });
 
-    const stream = new ReadableStream({
-      async start(controller) {
-        const enc = new TextEncoder();
-        let accumulated = "";
-        try {
-          for await (const event of interviewRunner.runAsync({
-            userId: user.id,
-            sessionId: adkSessionId,
-            newMessage: { role: "user", parts: [{ text: buildSkipPrompt() }] },
-          })) {
-            if (event.content?.parts) {
-              for (const part of event.content.parts) {
-                if (part.text && event.partial !== false) {
-                  accumulated += part.text;
-                  controller.enqueue(enc.encode(part.text));
-                }
-              }
-            }
-            if (isFinalResponse(event)) {
-              const final = stringifyContent(event);
-              if (!accumulated) { accumulated = final; controller.enqueue(enc.encode(final)); }
-            }
-          }
-        } finally {
-          let savedContent = accumulated;
-          let nextQuestionId: string | undefined;
-          try {
-            const parsed = JSON.parse(extractJson(accumulated)) as { message: string; next_question_id?: string | null };
-            savedContent = parsed.message;
-            if (parsed.next_question_id) nextQuestionId = parsed.next_question_id;
-          } catch { /* use raw */ }
-          await createMessage({ session_id: sessionId, role: "interviewer", content: savedContent, question_id: nextQuestionId });
-          controller.close();
-        }
-      },
-    });
+    let accumulated = "";
+    for await (const event of interviewRunner.runAsync({
+      userId: user.id,
+      sessionId: adkSessionId,
+      newMessage: { role: "user", parts: [{ text: buildSkipPrompt() }] },
+    })) {
+      if (isFinalResponse(event)) accumulated = stringifyContent(event);
+    }
 
-    return new Response(stream, {
-      headers: { "Content-Type": "text/plain; charset=utf-8", "X-Content-Type-Options": "nosniff" },
-    });
+    let message = accumulated;
+    let nextQuestionId: string | undefined;
+    try {
+      const parsed = JSON.parse(extractJson(accumulated)) as { message: string; next_question_id?: string | null };
+      message = parsed.message;
+      if (parsed.next_question_id) nextQuestionId = parsed.next_question_id;
+    } catch { /* use raw */ }
+
+    const [, audioBase64] = await Promise.all([
+      createMessage({ session_id: sessionId, role: "interviewer", content: message, question_id: nextQuestionId }),
+      generateTtsBase64(message),
+    ]);
+
+    return Response.json({ message, audioBase64 });
   }
 
   // ── EVALUATE ─────────────────────────────────────────────────────────────

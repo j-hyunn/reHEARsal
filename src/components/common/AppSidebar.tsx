@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileTextIcon, MessageSquareIcon, SettingsIcon, UserIcon } from "lucide-react";
+import { BotIcon, FileTextIcon, MessageSquareIcon, SettingsIcon, UserIcon } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -38,6 +38,11 @@ const navMain = [
   {
     title: "면접",
     items: [
+      {
+        title: "면접관 페르소나",
+        href: "/persona",
+        icon: BotIcon,
+      },
       {
         title: "모의 인터뷰",
         href: "/interview",

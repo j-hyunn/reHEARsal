@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Loader2Icon } from "lucide-react";
 import { cn } from "@/lib/utils/index";
 import type { UserDocument } from "@/lib/supabase/queries/documents";
 
@@ -44,6 +45,9 @@ export default function NewInterviewDialog({
 }: NewInterviewDialogProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+
+  // Title
+  const [title, setTitle] = useState("");
 
   // JD
   const [jdMode, setJdMode] = useState<JdInputMode>("link");
@@ -72,9 +76,10 @@ export default function NewInterviewDialog({
   const portfolioOptions = toOptions(portfolios);
   const githubOptions = toOptions(githubDocs);
 
-  const canStart = resumeIds.length > 0 && persona !== "" && duration !== "";
+  const canStart = title.trim() !== "" && resumeIds.length > 0 && persona !== "" && duration !== "";
 
   function handleReset() {
+    setTitle("");
     setJdMode("link");
     setJdLink("");
     setJdText("");
@@ -99,6 +104,7 @@ export default function NewInterviewDialog({
 
     startTransition(async () => {
       const result = await createInterviewSessionAction({
+        title: title.trim(),
         jdText: jdContent,
         persona: persona as "explorer" | "pressure",
         durationMinutes: Number(duration),
@@ -122,14 +128,32 @@ export default function NewInterviewDialog({
           <DialogTitle>새 면접 추가하기</DialogTitle>
         </DialogHeader>
 
+        {isPending && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-lg bg-background/90 backdrop-blur-sm">
+            <Loader2Icon className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm font-medium">면접을 생성하고 있어요...</p>
+          </div>
+        )}
+
         <div className="space-y-6 py-2">
+          {/* 0. Title */}
+          <section className="space-y-2">
+            <label className="text-sm font-medium">
+              면접 이름
+              <span className="ml-1 text-xs text-primary font-normal">*필수</span>
+            </label>
+            <Input
+              placeholder="예) 카카오 프론트엔드 2차 면접"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+          </section>
+
           {/* 1. Persona */}
           <section className="space-y-2">
             <label className="text-sm font-medium">
               면접관 페르소나
-              <span className="ml-1 text-xs text-destructive font-normal">
-                *필수
-              </span>
+              <span className="ml-1 text-xs text-primary font-normal">*필수</span>
             </label>
             <div className="grid grid-cols-2 gap-2">
               {(
@@ -162,9 +186,7 @@ export default function NewInterviewDialog({
           <section className="space-y-2">
             <label className="text-sm font-medium">
               면접 시간
-              <span className="ml-1 text-xs text-destructive font-normal">
-                *필수
-              </span>
+              <span className="ml-1 text-xs text-primary font-normal">*필수</span>
             </label>
             <Select value={duration} onValueChange={(v) => setDuration(v as "1" | "30" | "60" | "90")}>
               <SelectTrigger>
@@ -236,9 +258,7 @@ export default function NewInterviewDialog({
           <section className="space-y-2">
             <label className="text-sm font-medium">
               이력서 / 경력기술서
-              <span className="ml-1 text-xs text-destructive font-normal">
-                *필수
-              </span>
+              <span className="ml-1 text-xs text-primary font-normal">*필수</span>
             </label>
             {resumes.length === 0 ? (
               <p className="text-sm text-muted-foreground py-2">

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Pause, Play, SendHorizontal, Hourglass, ClipboardList, RotateCcw, Loader2, Lightbulb, SkipForward, Mic } from "lucide-react";
+import { Pause, Play, SendHorizontal, Hourglass, ClipboardList, RotateCcw, Loader2, Lightbulb, SkipForward, Mic, Volume2, VolumeX } from "lucide-react";
 import Image from "next/image";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
@@ -42,15 +42,20 @@ export default function InterviewView({ session, existingMessages }: InterviewVi
   const secondsLeftRef = useRef(initialSeconds);
   const [isPlaying, setIsPlaying] = useState(false); // starts false until analysis done
   const [timeUpOpen, setTimeUpOpen] = useState(false);
+  const [endConfirmOpen, setEndConfirmOpen] = useState(false);
   const [directInput, setDirectInput] = useState(false);
   const [inputText, setInputText] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isHinting, setIsHinting] = useState(false);
+  const [isEvaluating, setIsEvaluating] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [ttsEnabled, setTtsEnabled] = useState(true);
+  const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -59,11 +64,47 @@ export default function InterviewView({ session, existingMessages }: InterviewVi
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const sendOnStopRef = useRef(false);
+  const ttsEnabledRef = useRef(true);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const pendingAudioRef = useRef<string | null>(null);
 
   // Keep ref in sync
   useEffect(() => {
     secondsLeftRef.current = secondsLeft;
   }, [secondsLeft]);
+
+  // TTS cleanup on unmount
+  useEffect(() => {
+    return () => { stopTts(); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function stopTts() {
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+    setIsSpeaking(false);
+  }
+
+  function playBase64Audio(base64: string) {
+    if (!ttsEnabledRef.current || !base64) return;
+    stopTts();
+    const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+    const blob = new Blob([bytes], { type: "audio/wav" });
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.playbackRate = 1.3;
+    audioRef.current = audio;
+    setIsSpeaking(true);
+    audio.onended = () => { setIsSpeaking(false); URL.revokeObjectURL(url); };
+    audio.onerror = () => { setIsSpeaking(false); URL.revokeObjectURL(url); };
+    audio.play().catch(() => setIsSpeaking(false));
+  }
+
+  function toggleTts() {
+    const next = !ttsEnabledRef.current;
+    ttsEnabledRef.current = next;
+    setTtsEnabled(next);
+    if (!next) stopTts();
+  }
 
   // Analysis on mount
   useEffect(() => {
@@ -90,8 +131,9 @@ export default function InterviewView({ session, existingMessages }: InterviewVi
           const err = await res.json() as { error?: string };
           throw new Error(err.error ?? "분석 실패");
         }
-        const data = await res.json() as { firstMessage: string };
+        const data = await res.json() as { firstMessage: string; audioBase64?: string | null };
         setMessages([{ role: "interviewer", content: data.firstMessage }]);
+        if (data.audioBase64) pendingAudioRef.current = data.audioBase64;
         setIsPlaying(true);
       } catch (e) {
         setAnalysisError(e instanceof Error ? e.message : "면접 준비 중 오류가 발생했습니다.");
@@ -103,6 +145,36 @@ export default function InterviewView({ session, existingMessages }: InterviewVi
     runAnalysis();
   }, [session.id, session.analysis_json]);
 
+  const LOADING_MESSAGES = [
+    "면접관이 면접을 준비하고 있어요",
+    "면접관이 지원자님의 이력서를 확인하고 있어요.",
+    "면접관이 포트폴리오를 읽는 중이에요.",
+  ] as const;
+
+  useEffect(() => {
+    if (!isAnalyzing) return;
+    const id = setInterval(() => {
+      setLoadingMsgIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
+    }, 2500);
+    return () => clearInterval(id);
+  }, [isAnalyzing]);
+
+  // Stop TTS when interview is paused
+  useEffect(() => {
+    if (!isPlaying) stopTts();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPlaying]);
+
+  // Play pending TTS after analysis loading screen transitions to interview UI
+  useEffect(() => {
+    if (!isAnalyzing && pendingAudioRef.current) {
+      const audio = pendingAudioRef.current;
+      pendingAudioRef.current = null;
+      playBase64Audio(audio);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAnalyzing]);
+
   // Listen for exit event (일시정지)
   const handleExit = useCallback(async () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
@@ -110,12 +182,39 @@ export default function InterviewView({ session, existingMessages }: InterviewVi
     router.push("/interview");
   }, [session.id, router]);
 
-  // Listen for end event (면접 종료)
-  const handleEnd = useCallback(async () => {
+  // Listen for end event (면접 종료) — opens confirmation modal
+  const handleEnd = useCallback(() => {
+    setIsPlaying(false);
+    setEndConfirmOpen(true);
+  }, []);
+
+  async function goToReport() {
+    setIsEvaluating(true);
+    try {
+      await fetch("/api/interview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "evaluate", sessionId: session.id }),
+      });
+    } finally {
+      setIsEvaluating(false);
+      router.push(`/report/${session.id}`);
+    }
+  }
+
+  async function handleEndAndFeedback() {
+    setEndConfirmOpen(false);
     if (intervalRef.current) clearInterval(intervalRef.current);
     await updateSessionStatusAction(session.id, "completed");
+    await goToReport();
+  }
+
+  async function handleEndAndExit() {
+    setEndConfirmOpen(false);
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    await saveRemainingSecondsAction(session.id, secondsLeftRef.current);
     router.push("/interview");
-  }, [session.id, router]);
+  }
 
   useEffect(() => {
     window.addEventListener("interview:exit", handleExit);
@@ -173,22 +272,10 @@ export default function InterviewView({ session, existingMessages }: InterviewVi
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "respond", sessionId: session.id, userMessage: apiText ?? displayText }),
       });
-      if (!res.ok || !res.body) throw new Error("응답 실패");
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let accumulated = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        accumulated += decoder.decode(value, { stream: true });
-        let displayText = accumulated;
-        try {
-          const cleaned = accumulated.replace(/```(?:json)?\s*([\s\S]*?)```/, "$1").trim();
-          const parsed = JSON.parse(cleaned) as { message: string };
-          displayText = parsed.message;
-        } catch { /* streaming */ }
-        setMessages((prev) => [...prev.slice(0, -1), { role: "interviewer", content: displayText }]);
-      }
+      if (!res.ok) throw new Error("응답 실패");
+      const { message, audioBase64 } = await res.json() as { message: string; audioBase64: string | null };
+      setMessages((prev) => [...prev.slice(0, -1), { role: "interviewer", content: message }]);
+      if (audioBase64) playBase64Audio(audioBase64);
     } catch {
       setMessages((prev) => [
         ...prev.slice(0, -1),
@@ -244,22 +331,10 @@ export default function InterviewView({ session, existingMessages }: InterviewVi
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "skip", sessionId: session.id }),
       });
-      if (!res.ok || !res.body) throw new Error("skip 실패");
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let accumulated = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        accumulated += decoder.decode(value, { stream: true });
-        let displayText = accumulated;
-        try {
-          const cleaned = accumulated.replace(/```(?:json)?\s*([\s\S]*?)```/, "$1").trim();
-          const parsed = JSON.parse(cleaned) as { message: string };
-          displayText = parsed.message;
-        } catch { /* streaming */ }
-        setMessages((prev) => [...prev.slice(0, -1), { role: "interviewer", content: displayText }]);
-      }
+      if (!res.ok) throw new Error("skip 실패");
+      const { message, audioBase64 } = await res.json() as { message: string; audioBase64: string | null };
+      setMessages((prev) => [...prev.slice(0, -1), { role: "interviewer", content: message }]);
+      if (audioBase64) playBase64Audio(audioBase64);
     } catch {
       setMessages((prev) => [...prev.slice(0, -1), { role: "interviewer", content: "오류가 발생했습니다. 다시 시도해주세요." }]);
     } finally {
@@ -283,6 +358,7 @@ export default function InterviewView({ session, existingMessages }: InterviewVi
   }
 
   async function handleMicStart() {
+    stopTts();
     let stream: MediaStream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -383,6 +459,41 @@ export default function InterviewView({ session, existingMessages }: InterviewVi
   const isLowTime = secondsLeft < totalSeconds * 0.2;
   const title = session.persona ? `${PERSONA_LABELS[session.persona]} 모의면접` : "모의면접";
 
+  if (isEvaluating) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-4">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <div className="text-center space-y-1">
+          <p className="text-sm font-medium">면접 결과를 분석하고 있어요</p>
+          <p className="text-xs text-muted-foreground">답변을 바탕으로 피드백 리포트를 생성하는 중이에요.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isAnalyzing) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-4">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <div className="text-center space-y-1">
+          <p className="text-sm font-medium">{LOADING_MESSAGES[loadingMsgIndex]}</p>
+          <p className="text-xs text-muted-foreground">이력서와 JD를 분석하고 첫 번째 질문을 생성하는 중이에요.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (analysisError) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-4">
+        <p className="text-sm text-destructive">{analysisError}</p>
+        <Button size="sm" variant="outline" onClick={() => { analysisRanRef.current = false; setAnalysisError(null); }}>
+          다시 시도
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <>
     <Dialog open={timeUpOpen} onOpenChange={setTimeUpOpen}>
@@ -404,10 +515,7 @@ export default function InterviewView({ session, existingMessages }: InterviewVi
             </DialogDescription>
           </div>
           <div className="flex w-full flex-col gap-2 pt-2">
-            <Button
-              className="w-full gap-2"
-              onClick={() => router.push(`/report/${session.id}`)}
-            >
+            <Button className="w-full gap-2" onClick={goToReport}>
               <ClipboardList className="h-4 w-4" />
               피드백 받기
             </Button>
@@ -425,6 +533,49 @@ export default function InterviewView({ session, existingMessages }: InterviewVi
               onClick={() => router.push("/interview")}
             >
               나가기
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog open={endConfirmOpen} onOpenChange={setEndConfirmOpen}>
+      <DialogContent
+        className="max-w-sm [&>button]:hidden"
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
+        <div className="flex flex-col items-center gap-4 pt-4 pb-2 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+            <ClipboardList className="h-8 w-8 text-primary" />
+          </div>
+          <div className="space-y-2">
+            <DialogTitle className="text-xl text-primary">면접을 종료할까요?</DialogTitle>
+            <DialogDescription className="text-sm leading-relaxed">
+              지금 종료하면 피드백 리포트를 바로 받을 수 있어요.
+              <br />
+              아직 준비가 덜 됐다면 일시 정지 후 나중에 이어서 진행할 수 있어요.
+            </DialogDescription>
+          </div>
+          <div className="flex w-full flex-col gap-2 pt-2">
+            <Button className="w-full gap-2" onClick={handleEndAndFeedback}>
+              <ClipboardList className="h-4 w-4" />
+              종료하고 피드백 받기
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full gap-2 bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary"
+              onClick={handleEndAndExit}
+            >
+              <Pause className="h-4 w-4" />
+              잠시 나가기
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full text-muted-foreground hover:text-foreground"
+              onClick={() => { setEndConfirmOpen(false); setIsPlaying(true); }}
+            >
+              계속 진행하기
             </Button>
           </div>
         </div>
@@ -494,30 +645,16 @@ export default function InterviewView({ session, existingMessages }: InterviewVi
             }
           `}</style>
 
-          {isAnalyzing ? (
-            <div className="flex flex-col items-center gap-3 text-muted-foreground">
-              <Loader2 className="h-10 w-10 animate-spin text-primary" />
-              <p className="text-sm">면접을 준비하고 있어요...</p>
-            </div>
-          ) : analysisError ? (
-            <div className="flex flex-col items-center gap-3 px-6 text-center">
-              <p className="text-sm text-destructive">{analysisError}</p>
-              <Button size="sm" variant="outline" onClick={() => { analysisRanRef.current = false; setAnalysisError(null); }}>
-                다시 시도
-              </Button>
-            </div>
-          ) : (
+          <div
+            className="blob-outer relative"
+            style={{ animationPlayState: isPlaying ? "running" : "paused" }}
+          >
             <div
-              className="blob-outer relative"
+              className="blob-glow blob-halo absolute inset-0 rounded-full blur-3xl scale-125"
               style={{ animationPlayState: isPlaying ? "running" : "paused" }}
-            >
-              <div
-                className="blob-glow blob-halo absolute inset-0 rounded-full blur-3xl scale-125"
-                style={{ animationPlayState: isPlaying ? "running" : "paused" }}
-              />
-              <div className="blob-orb" />
-            </div>
-          )}
+            />
+            <div className="blob-orb" />
+          </div>
         </div>
 
         {/* Controls */}
@@ -554,7 +691,14 @@ export default function InterviewView({ session, existingMessages }: InterviewVi
         {/* Header */}
         <div className="flex items-center justify-between border-b px-4 py-3 shrink-0">
           <span className="text-sm font-semibold">대화 내용</span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={toggleTts}
+              className={`transition-colors ${ttsEnabled ? (isSpeaking ? "text-primary" : "text-foreground") : "text-muted-foreground"}`}
+              aria-label={ttsEnabled ? "음소거" : "음성 켜기"}
+            >
+              {ttsEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+            </button>
             <span className="text-xs text-muted-foreground">직접 입력</span>
             <Switch checked={directInput} onCheckedChange={setDirectInput} />
           </div>
@@ -562,12 +706,6 @@ export default function InterviewView({ session, existingMessages }: InterviewVi
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-          {isAnalyzing && messages.length === 0 && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span className="text-sm">면접관이 준비 중이에요...</span>
-            </div>
-          )}
           {messages.map((msg, i) => (
             <div key={i}>
               {msg.role === "interviewer" && (

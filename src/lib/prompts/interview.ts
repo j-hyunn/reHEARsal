@@ -8,7 +8,7 @@ export interface InterviewAgentOutput {
   is_last: boolean;
 }
 
-const PERSONA_INSTRUCTIONS = {
+export const PERSONA_INSTRUCTIONS = {
   explorer: `당신은 경험 탐색형 면접관입니다.
 유저가 자신의 경험을 편안하게 풀어낼 수 있도록 돕는 면접관입니다. 부드럽고 대화적인 톤을 유지하며, 유저를 긴장시키지 않습니다.
 
@@ -53,8 +53,9 @@ export function buildInterviewSystemPrompt(params: {
   remainingSeconds: number;
   totalSeconds: number;
   userProfile?: UserProfileContext;
+  customInstructions?: string;
 }): string {
-  const { persona, jdText, resumeTexts, analysisJson, remainingSeconds, totalSeconds, userProfile } = params;
+  const { persona, jdText, resumeTexts, analysisJson, remainingSeconds, totalSeconds, userProfile, customInstructions } = params;
 
   const isClosingPhase = remainingSeconds < totalSeconds * 0.2;
   const remainingMinutes = Math.floor(remainingSeconds / 60);
@@ -73,7 +74,11 @@ export function buildInterviewSystemPrompt(params: {
 - 보유 스킬: ${userProfile.skills.length > 0 ? userProfile.skills.join(", ") : "미입력"}`
     : "";
 
-  return `${PERSONA_INSTRUCTIONS[persona]}
+  const customSection = customInstructions?.trim()
+    ? `\n\n## 사용자 추가 지침\n${customInstructions.trim()}`
+    : "";
+
+  return `${PERSONA_INSTRUCTIONS[persona]}${customSection}
 
 ## 면접 컨텍스트
 

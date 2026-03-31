@@ -36,6 +36,7 @@ const interviewInstruction: InstructionProvider = (ctx) => {
     remainingSeconds: (s.remainingSeconds as number) ?? 1800,
     totalSeconds: (s.totalSeconds as number) ?? 1800,
     userProfile: s.userProfile as UserProfileContext | undefined,
+    customInstructions: (s.customInstructions as string) ?? "",
   });
 };
 
