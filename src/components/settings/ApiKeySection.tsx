@@ -132,7 +132,7 @@ export default function ApiKeySection({
     <section className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-sm font-semibold">내 AI 모델 사용하기</h2>
+          <h2 className="text-lg font-semibold">내 AI 모델 사용하기</h2>
           <p className="text-sm text-muted-foreground mt-1">
             {keySaved
               ? `내 API 키 사용 중 — ${savedModel}`
