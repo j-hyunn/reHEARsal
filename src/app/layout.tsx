@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { GoogleAnalytics } from "@next/third-parties/google";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
@@ -38,6 +39,7 @@ export default function RootLayout({
         </TooltipProvider>
         <Toaster />
       </body>
+      <GoogleAnalytics gaId="G-NLL8P9G6YE" />
     </html>
   );
 }
