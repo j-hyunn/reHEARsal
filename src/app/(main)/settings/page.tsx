@@ -3,7 +3,6 @@ import { Separator } from "@/components/ui/separator";
 import ProfileSection from "@/components/settings/ProfileSection";
 import AccountInfoSection from "@/components/settings/AccountInfoSection";
 import DangerZone from "@/components/settings/DangerZone";
-
 export default async function SettingsPage() {
   const user = await getUser();
   if (!user) return null;

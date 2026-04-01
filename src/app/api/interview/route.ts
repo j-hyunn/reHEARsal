@@ -14,6 +14,7 @@ import { getSession, updateSession } from "@/lib/supabase/queries/sessions";
 import { getDocumentsByIds } from "@/lib/supabase/queries/documents";
 import { getSessionMessages, createMessage } from "@/lib/supabase/queries/messages";
 import { env } from "@/lib/env";
+import { getUserAiConfig } from "@/lib/ai-config";
 import { generateTtsBase64 } from "@/lib/tts";
 import { buildAnalysisPrompt, type AnalysisOutput, type UserProfileContext } from "@/lib/prompts/analysis";
 import { getUserProfile } from "@/lib/supabase/queries/profiles";
@@ -24,8 +25,8 @@ import { sessionService, interviewRunner, APP_NAME } from "@/lib/agents/runners"
 
 const MODEL = "gemini-2.5-flash";
 
-function makeGemini() {
-  return new Gemini({ model: MODEL, apiKey: env.googleApiKey });
+function makeGemini(apiKey: string, model: string) {
+  return new Gemini({ model, apiKey });
 }
 
 // Gemini sometimes wraps JSON in markdown code fences despite instructions.
@@ -36,8 +37,8 @@ function extractJson(raw: string): string {
 }
 
 // One-shot agent: no session persistence needed (analysis + evaluation).
-async function runOneShot(instruction: string, userMessage: string, userId: string): Promise<string> {
-  const agent = new LlmAgent({ name: "oneshot_agent", model: makeGemini(), instruction });
+async function runOneShot(instruction: string, userMessage: string, userId: string, apiKey: string, model: string): Promise<string> {
+  const agent = new LlmAgent({ name: "oneshot_agent", model: makeGemini(apiKey, model), instruction });
   const runner = new Runner({ agent, appName: APP_NAME, sessionService: new InMemorySessionService() });
 
   let result = "";
@@ -116,6 +117,8 @@ export async function POST(req: Request) {
   const user = await getUser();
   if (!user) return new Response("Unauthorized", { status: 401 });
 
+  const { apiKey, model } = await getUserAiConfig(user.id);
+
   const body = await req.json() as { type: string; sessionId: string; userMessage?: string };
   const { type, sessionId, userMessage } = body;
 
@@ -167,7 +170,7 @@ export async function POST(req: Request) {
       userProfile,
     });
 
-    const raw = await runOneShot(prompt, "분석을 시작하세요.", user.id);
+    const raw = await runOneShot(prompt, "분석을 시작하세요.", user.id, apiKey, model);
 
     let analysisJson: AnalysisOutput;
     try {
@@ -326,7 +329,7 @@ export async function POST(req: Request) {
       recentMessages,
       userProfile,
     });
-    const hintText = await runOneShot(hintPromptText, "모범 답안을 작성해주세요.", user.id);
+    const hintText = await runOneShot(hintPromptText, "모범 답안을 작성해주세요.", user.id, apiKey, model);
 
     return Response.json({ hint: hintText });
   }
@@ -439,7 +442,7 @@ export async function POST(req: Request) {
       resumeTexts,
     });
 
-    const raw = await runOneShot(prompt, "평가를 시작하세요.", user.id);
+    const raw = await runOneShot(prompt, "평가를 시작하세요.", user.id, apiKey, model);
 
     let reportJson;
     try {

@@ -5,6 +5,7 @@
 export const env = {
   // Server-only
   googleApiKey: process.env.GOOGLE_API_KEY!,
+  encryptionKey: process.env.ENCRYPTION_KEY!,
   supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
 
   // Client-allowed (prefixed with NEXT_PUBLIC_)

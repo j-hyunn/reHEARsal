@@ -1,11 +1,14 @@
 import { Separator } from "@/components/ui/separator";
 import AudioSettingsLoader from "@/components/preferences/AudioSettingsLoader";
+import ApiKeySection from "@/components/settings/ApiKeySection";
+import { getApiSettingsAction } from "@/app/(main)/settings/actions";
 
 export const metadata = {
   title: "환경설정 | 리허설",
 };
 
-export default function PreferencesPage() {
+export default async function PreferencesPage() {
+  const apiSettings = await getApiSettingsAction();
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6 space-y-8">
       <div>
@@ -18,6 +21,13 @@ export default function PreferencesPage() {
       <Separator />
 
       <AudioSettingsLoader />
+
+      <Separator />
+
+      <ApiKeySection
+        hasCustomKey={apiSettings.hasCustomKey}
+        currentModel={apiSettings.model}
+      />
     </div>
   );
 }

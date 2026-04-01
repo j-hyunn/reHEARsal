@@ -33,9 +33,8 @@ export function buildAnalysisPrompt(params: {
   const questionCount = Math.round((durationMinutes / 5) * 1.5);
 
   const personaContext = {
-    startup: "스타트업 실무진 면접으로, 실용적이고 직설적인 질문을 선호합니다.",
-    enterprise: "대기업 인사팀 면접으로, 체계적이고 형식적인 질문을 선호합니다.",
-    pressure: "압박 면접으로, 날카롭고 집요한 추가 질문을 선호합니다.",
+    explorer: "경험 탐색형 면접으로, 지원자가 자신의 경험을 편안하게 풀어낼 수 있도록 열린 질문을 선호합니다.",
+    pressure: "심층 압박형 면접으로, 논리적 검증과 날카로운 꼬리질문을 통해 지원자의 사고력을 검증합니다.",
   }[persona] ?? "";
 
   // resumeTexts already contains labeled sections (e.g. "[이력서: ...]\n...", "[포트폴리오: ...]\n...")
@@ -61,8 +60,8 @@ export function buildAnalysisPrompt(params: {
 ${profileSection ? `\n${profileSection}` : ""}
 ## JD 제공 여부
 ${jdText
-  ? "✅ JD가 제공되었습니다. common 질문의 첫 번째는 자기소개, 두 번째는 지원동기를 반드시 포함하세요."
-  : "❌ JD가 제공되지 않았습니다. 지원동기 질문은 절대 포함하지 마세요. 자기소개는 첫 번째로 포함하세요."}
+      ? "✅ JD가 제공되었습니다. common 질문의 첫 번째는 자기소개, 두 번째는 지원동기를 반드시 포함하세요."
+      : "❌ JD가 제공되지 않았습니다. 지원동기 질문은 절대 포함하지 마세요. 자기소개는 첫 번째로 포함하세요."}
 
 ## JD (채용공고)
 ${jdText || (userProfile?.jobCategory ? `없음 — 지원자 직군(${userProfile.jobCategory}) 기반 일반 면접 질문을 생성하세요.` : "없음 — 일반적인 IT 직무 면접 질문을 생성하세요.")}
