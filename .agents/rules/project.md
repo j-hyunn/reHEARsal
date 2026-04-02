@@ -19,12 +19,16 @@ Read before starting any task.
 
 ```
 Google login
-→ Upload documents (resume required, portfolio optional, Git optional)
+→ Onboarding (신규 사용자만)
+    Step 1: 내 소개 — 직군·연차 (필수), 기술스택·스킬 (선택)
+    Step 2: 문서 업로드 — 이력서·포트폴리오·Git (전부 선택)
 → Interview setup (JD input, time slider, persona selection)
 → AI context analysis (background)
 → Mock interview simulation (text-based, conversational)
 → Report (per-answer scores + summary + improvement points)
 ```
+
+> 온보딩 완료 기준: `user_profiles.job_category !== null`
 
 ## MVP Scope
 

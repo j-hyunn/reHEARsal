@@ -23,22 +23,33 @@ export async function GET(request: NextRequest) {
   }
 
   const user = sessionData.user;
+  let isNewUser = false;
+
   if (user) {
-    await supabase.from('user_profiles').upsert(
-      {
-        user_id: user.id,
-        email: user.email ?? null,
-        name: (user.user_metadata?.full_name as string) ?? null,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'user_id' }
-    );
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .upsert(
+        {
+          user_id: user.id,
+          email: user.email ?? null,
+          name: (user.user_metadata?.full_name as string) ?? null,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id' }
+      )
+      .select('job_category')
+      .single();
+
+    if (profile) {
+      isNewUser = profile.job_category === null;
+    }
   }
 
   const isPopup = searchParams.get("popup") === "true";
   if (isPopup) {
-    return NextResponse.redirect(`${origin}/auth/popup-success`);
+    const dest = isNewUser ? `/auth/popup-success?new_user=true` : `/auth/popup-success`;
+    return NextResponse.redirect(`${origin}${dest}`);
   }
 
-  return NextResponse.redirect(`${origin}/interview`);
+  return NextResponse.redirect(`${origin}/${isNewUser ? 'onboarding' : 'interview'}`);
 }

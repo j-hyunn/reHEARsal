@@ -1,0 +1,31 @@
+export const JOB_CATEGORIES = [
+  "프론트엔드 개발자",
+  "백엔드 개발자",
+  "풀스택 개발자",
+  "iOS 개발자",
+  "Android 개발자",
+  "Product Manager",
+  "Product Designer (UI/UX)",
+  "ML 엔지니어",
+  "데이터 사이언티스트",
+  "데이터 엔지니어",
+  "MLOps 엔지니어",
+  "DevOps 엔지니어",
+  "SRE",
+  "클라우드 엔지니어",
+  "보안 엔지니어",
+] as const;
+
+export const YEARS_OPTIONS = [
+  { label: "1년 미만", value: "0" },
+  { label: "1년", value: "1" },
+  { label: "2년", value: "2" },
+  { label: "3년", value: "3" },
+  { label: "4년", value: "4" },
+  { label: "5년", value: "5" },
+  { label: "6년", value: "6" },
+  { label: "7년", value: "7" },
+  { label: "8년", value: "8" },
+  { label: "9년", value: "9" },
+  { label: "10년 이상", value: "10" },
+] as const;

@@ -43,8 +43,8 @@ export default function LoginPage() {
       if (isMobileBrowser()) {
         await signInWithGoogle();
       } else {
-        await signInWithGooglePopup();
-        router.push("/interview");
+        const { isNewUser } = await signInWithGooglePopup();
+        router.push(isNewUser ? "/onboarding" : "/interview");
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "로그인에 실패했습니다. 다시 시도해주세요.";

@@ -13,14 +13,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { saveProfileAction } from "@/app/(main)/profile/actions";
-import type { UserProfile } from "@/lib/supabase/queries/profiles";
 import { JOB_CATEGORIES, YEARS_OPTIONS } from "@/lib/constants/profile";
+import type { UserProfile } from "@/lib/supabase/queries/profiles";
 
-interface Props {
+interface ProfileStepProps {
   profile: UserProfile | null;
+  onNext: () => void;
 }
 
-export default function ProfileForm({ profile }: Props) {
+export default function ProfileStep({ profile, onNext }: ProfileStepProps) {
   const [isPending, startTransition] = useTransition();
 
   const [jobCategory, setJobCategory] = useState<string>(
@@ -35,7 +36,6 @@ export default function ProfileForm({ profile }: Props) {
     profile?.tech_stack ?? []
   );
   const [skills, setSkills] = useState<string[]>(profile?.skills ?? []);
-
   const [techInput, setTechInput] = useState("");
   const [skillInput, setSkillInput] = useState("");
 
@@ -79,7 +79,7 @@ export default function ProfileForm({ profile }: Props) {
     }
   }
 
-  function handleSave() {
+  function handleNext() {
     startTransition(async () => {
       const result = await saveProfileAction({
         job_category: jobCategory || null,
@@ -91,9 +91,10 @@ export default function ProfileForm({ profile }: Props) {
 
       if (result.error) {
         toast.error(result.error);
-      } else {
-        toast.success("내 소개가 저장되었습니다.");
+        return;
       }
+
+      onNext();
     });
   }
 
@@ -101,7 +102,9 @@ export default function ProfileForm({ profile }: Props) {
     <div className="space-y-8">
       {/* 직군 */}
       <div className="space-y-2">
-        <label className="text-sm font-medium">직군</label>
+        <label className="text-sm font-medium">
+          직군 <span className="text-primary">*필수</span>
+        </label>
         <Select value={jobCategory} onValueChange={setJobCategory}>
           <SelectTrigger className="w-full">
             <SelectValue placeholder="선택해주세요" />
@@ -118,7 +121,9 @@ export default function ProfileForm({ profile }: Props) {
 
       {/* 연차 */}
       <div className="space-y-2">
-        <label className="text-sm font-medium">연차</label>
+        <label className="text-sm font-medium">
+          연차 <span className="text-primary">*필수</span>
+        </label>
         <Select value={yearsOfExperience} onValueChange={setYearsOfExperience}>
           <SelectTrigger className="w-full">
             <SelectValue placeholder="선택해주세요" />
@@ -141,7 +146,10 @@ export default function ProfileForm({ profile }: Props) {
         </p>
         <div className="flex flex-wrap gap-2 min-h-9 rounded-md border border-input bg-transparent px-3 py-2">
           {techStack.map((tag, i) => (
-            <Badge key={i} className="gap-1 pr-1 bg-accent text-primary hover:bg-accent">
+            <Badge
+              key={i}
+              className="gap-1 pr-1 bg-accent text-primary hover:bg-accent"
+            >
               {tag}
               <button
                 type="button"
@@ -159,13 +167,7 @@ export default function ProfileForm({ profile }: Props) {
             value={techInput}
             onChange={(e) => setTechInput(e.target.value)}
             onKeyDown={(e) =>
-              handleTagKeyDown(
-                e,
-                techInput,
-                techStack,
-                setTechStack,
-                setTechInput
-              )
+              handleTagKeyDown(e, techInput, techStack, setTechStack, setTechInput)
             }
             onBlur={() =>
               addTag(techInput, techStack, setTechStack, setTechInput)
@@ -182,7 +184,10 @@ export default function ProfileForm({ profile }: Props) {
         </p>
         <div className="flex flex-wrap gap-2 min-h-9 rounded-md border border-input bg-transparent px-3 py-2">
           {skills.map((tag, i) => (
-            <Badge key={i} className="gap-1 pr-1 bg-accent text-primary hover:bg-accent">
+            <Badge
+              key={i}
+              className="gap-1 pr-1 bg-accent text-primary hover:bg-accent"
+            >
               {tag}
               <button
                 type="button"
@@ -196,9 +201,7 @@ export default function ProfileForm({ profile }: Props) {
           ))}
           <input
             className="flex-1 min-w-24 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-            placeholder={
-              skills.length === 0 ? "예: 커뮤니케이션, 문제 해결" : ""
-            }
+            placeholder={skills.length === 0 ? "예: 커뮤니케이션, 문제 해결" : ""}
             value={skillInput}
             onChange={(e) => setSkillInput(e.target.value)}
             onKeyDown={(e) =>
@@ -209,9 +212,14 @@ export default function ProfileForm({ profile }: Props) {
         </div>
       </div>
 
-      <Button onClick={handleSave} disabled={isPending}>
-        {isPending ? "저장 중..." : "저장"}
-      </Button>
+      <div className="flex justify-end pt-2">
+        <Button
+          onClick={handleNext}
+          disabled={isPending || !jobCategory || yearsOfExperience === ""}
+        >
+          {isPending ? "저장 중..." : "다음 →"}
+        </Button>
+      </div>
     </div>
   );
 }

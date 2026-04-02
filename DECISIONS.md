@@ -345,4 +345,44 @@
 
 ---
 
+## 17. 신규 사용자 온보딩 플로우
+
+**결정** (2026-04-02): 첫 로그인 후 별도 온보딩 라우트(`/onboarding`)로 이동해 직군·연차·문서를 미리 수집한다.
+
+**구조**
+
+```
+Google login → auth callback
+  → job_category === null (신규) → /onboarding
+  → job_category !== null (기존) → /interview
+
+/onboarding
+  Step 1: 내 소개 (직군·연차 필수, 기술스택·스킬 선택)
+  Step 2: 문서 업로드 (이력서·포트폴리오·Git, 전부 선택)
+  → /interview
+```
+
+**신규 사용자 감지 기준**: `user_profiles.job_category === null`
+
+- 온보딩 Step 1에서 직군·연차를 필수 입력으로 강제 → 완료 시 반드시 `job_category`가 채워짐
+- 기존에 검토한 "60초 타이머" 방식은 기각 — 온보딩을 건너뛴 사용자가 재로그인 시 반복 노출되는 문제
+- DB 플래그(`onboarding_completed`) 추가 없이 기존 컬럼으로 완료 여부 판단 가능
+
+**팝업 플로우 처리**
+
+데스크톱은 팝업 OAuth를 사용하므로 auth callback 리다이렉트가 부모 창에 직접 적용되지 않음. 해결책:
+- callback → `popup-success?new_user=true` 파라미터 전달
+- popup-success → `postMessage({ type: 'oauth_success', isNewUser })` 전송
+- 로그인 페이지 → `isNewUser` 값으로 `/onboarding` 또는 `/interview` 분기
+
+**관련 파일**
+
+- `src/app/auth/callback/route.ts`
+- `src/app/auth/popup-success/page.tsx`
+- `src/lib/supabase/auth.client.ts`
+- `src/app/(onboarding)/`
+- `src/components/onboarding/`
+
+---
+
 *이 문서는 결정이 바뀔 때마다 업데이트한다. 날짜와 이유를 항상 함께 기록한다.*

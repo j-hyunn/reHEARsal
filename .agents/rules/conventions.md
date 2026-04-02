@@ -34,6 +34,8 @@ Read before writing any code or implementing UI.
 app/
 ├─ (auth)/
 │   └─ login/page.tsx
+├─ (onboarding)/
+│   └─ onboarding/page.tsx    → 신규 사용자 온보딩 위저드
 ├─ (main)/
 │   ├─ upload/page.tsx
 │   ├─ setup/page.tsx
@@ -45,6 +47,7 @@ app/
 
 components/
 ├─ ui/           → shadcn components (do not modify)
+├─ onboarding/   → onboarding wizard and steps
 ├─ interview/    → interview-related components
 ├─ report/       → report-related components
 └─ common/       → shared components
@@ -52,6 +55,7 @@ components/
 lib/
 ├─ supabase/     → Supabase client, queries
 ├─ agents/       → ADK agent definitions
+├─ constants/    → shared constants (e.g. profile options)
 ├─ parsers/      → document parsers (pdf.js, mammoth.js)
 ├─ prompts/      → agent prompts
 └─ utils/        → utility functions

@@ -30,7 +30,7 @@ export async function signInWithGoogle(): Promise<void> {
  * Resolves when the user completes sign-in and the popup closes.
  * The caller is responsible for navigating after this resolves.
  */
-export async function signInWithGooglePopup(): Promise<void> {
+export async function signInWithGooglePopup(): Promise<{ isNewUser: boolean }> {
   const supabase = createClient()
 
   const { data, error } = await supabase.auth.signInWithOAuth({
@@ -52,7 +52,7 @@ export async function signInWithGooglePopup(): Promise<void> {
       if (event.origin !== window.location.origin) return
       if (event.data?.type === 'oauth_success') {
         cleanup()
-        resolve()
+        resolve({ isNewUser: event.data.isNewUser === true })
       }
     }
 
