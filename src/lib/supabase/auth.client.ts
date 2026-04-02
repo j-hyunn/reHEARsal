@@ -86,20 +86,33 @@ export function isInAppBrowser(): boolean {
  * iOS: tries Chrome via googlechrome:// scheme, then copies URL to clipboard as fallback.
  * Returns true if a redirect was attempted, false if fell back to clipboard copy.
  */
+/**
+ * Attempts to open the current page in an external browser.
+ * - KakaoTalk (iOS & Android): uses kakaotalk://web/openExternal scheme
+ * - Android (other in-app browsers): uses generic intent:// — system opens default browser
+ * - iOS (other in-app browsers): copies URL to clipboard as fallback
+ * Returns true if a redirect was attempted, false if fell back to clipboard copy.
+ */
 export async function openInExternalBrowser(): Promise<boolean> {
   const url = window.location.href
+  const ua = navigator.userAgent
 
-  if (/Android/i.test(navigator.userAgent)) {
-    window.location.href = `intent://${url.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.android.chrome;end`
+  if (/KAKAOTALK/i.test(ua)) {
+    window.location.href = `kakaotalk://web/openExternal?url=${encodeURIComponent(url)}`
     return true
   }
 
-  if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-    window.location.href = url.replace(/^https?:\/\//, 'googlechrome://')
-    // If Chrome is not installed the redirect silently fails — fall back to clipboard
-    await new Promise(resolve => setTimeout(resolve, 1500))
+  if (/Line/i.test(ua)) {
+    window.location.href = url + (url.includes('?') ? '&' : '?') + 'openExternalBrowser=1'
+    return true
   }
 
+  if (/Android/i.test(ua)) {
+    window.location.href = `intent://${url.replace(/^https?:\/\//, '')}#Intent;scheme=https;end`
+    return true
+  }
+
+  // iOS fallback: copy URL to clipboard
   try {
     await navigator.clipboard.writeText(url)
   } catch {
