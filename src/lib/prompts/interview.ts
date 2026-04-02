@@ -60,6 +60,12 @@ export function buildInterviewSystemPrompt(params: {
   const isClosingPhase = remainingSeconds < totalSeconds * 0.2;
   const remainingMinutes = Math.floor(remainingSeconds / 60);
 
+  // good_answer_tips는 힌트 에이전트 전용 — 면접관 에이전트 시스템 프롬프트에서 제외
+  const analysisForPrompt = {
+    ...analysisJson,
+    questions: analysisJson.questions.map(({ good_answer_tips: _omit, ...rest }) => rest),
+  };
+
   // resumeTexts already contains labeled sections (e.g. "[이력서: ...]\n...", "[포트폴리오: ...]\n...")
   const resumeSection =
     resumeTexts.length > 0
@@ -91,7 +97,7 @@ ${profileSection ? `\n${profileSection}` : ""}
 ${resumeSection}
 
 ### 사전 분석 결과
-${JSON.stringify(analysisJson, null, 2)}
+${JSON.stringify(analysisForPrompt, null, 2)}
 
 ## 면접 진행 규칙
 1. 준비된 질문 세트(analysisJson.questions)를 순서대로 진행하세요.

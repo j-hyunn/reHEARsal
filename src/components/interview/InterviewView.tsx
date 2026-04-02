@@ -56,6 +56,7 @@ export default function InterviewView({ session, existingMessages }: InterviewVi
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [ttsEnabled, setTtsEnabled] = useState(true);
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
+  const [thinkingMsgIndex, setThinkingMsgIndex] = useState(0);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -151,6 +152,11 @@ export default function InterviewView({ session, existingMessages }: InterviewVi
     "면접관이 포트폴리오를 읽는 중이에요.",
   ] as const;
 
+  const THINKING_MESSAGES = [
+    "면접관이 생각중이에요...",
+    "면접관이 다음 질문을 준비하고 있어요...",
+  ] as const;
+
   useEffect(() => {
     if (!isAnalyzing) return;
     const id = setInterval(() => {
@@ -158,6 +164,14 @@ export default function InterviewView({ session, existingMessages }: InterviewVi
     }, 2500);
     return () => clearInterval(id);
   }, [isAnalyzing]);
+
+  useEffect(() => {
+    if (!isSending) return;
+    const id = setInterval(() => {
+      setThinkingMsgIndex((prev) => (prev + 1) % THINKING_MESSAGES.length);
+    }, 2500);
+    return () => clearInterval(id);
+  }, [isSending]);
 
   // Stop TTS when interview is paused
   useEffect(() => {
@@ -722,10 +736,8 @@ export default function InterviewView({ session, existingMessages }: InterviewVi
                 }`}
               >
                 {msg.content || (
-                  <span className="inline-flex gap-1">
-                    <span className="animate-pulse">·</span>
-                    <span className="animate-pulse delay-75">·</span>
-                    <span className="animate-pulse delay-150">·</span>
+                  <span className="text-muted-foreground italic">
+                    {THINKING_MESSAGES[thinkingMsgIndex]}
                   </span>
                 )}
               </div>

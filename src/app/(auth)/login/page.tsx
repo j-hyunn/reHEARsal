@@ -13,7 +13,7 @@ import {
   CardHeader,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { signInWithGooglePopup } from "@/lib/supabase/auth.client";
+import { signInWithGoogle, signInWithGooglePopup, isMobileBrowser, isInAppBrowser } from "@/lib/supabase/auth.client";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -29,8 +29,17 @@ export default function LoginPage() {
   async function handleGoogleLogin() {
     setIsPending(true);
     try {
-      await signInWithGooglePopup();
-      router.push("/interview");
+      if (isInAppBrowser()) {
+        toast.error("카카오톡, 인스타그램 등 앱 내 브라우저에서는 로그인이 지원되지 않습니다. Safari 또는 Chrome에서 열어주세요.");
+        setIsPending(false);
+        return;
+      }
+      if (isMobileBrowser()) {
+        await signInWithGoogle();
+      } else {
+        await signInWithGooglePopup();
+        router.push("/interview");
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "로그인에 실패했습니다. 다시 시도해주세요.";
       toast.error(message);

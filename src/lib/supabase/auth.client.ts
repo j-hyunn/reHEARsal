@@ -72,6 +72,14 @@ export async function signInWithGooglePopup(): Promise<void> {
   })
 }
 
+export function isMobileBrowser(): boolean {
+  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+}
+
+export function isInAppBrowser(): boolean {
+  return /KAKAOTALK|Instagram|NAVER|Line|FB|Facebook|Twitter|Snapchat/i.test(navigator.userAgent)
+}
+
 /**
  * Signs the current user out and clears the session.
  */
