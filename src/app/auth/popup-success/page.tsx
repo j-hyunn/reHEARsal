@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 
-export default function PopupSuccessPage() {
+function PopupSuccessInner() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -18,4 +18,12 @@ export default function PopupSuccessPage() {
   }, [searchParams]);
 
   return null;
+}
+
+export default function PopupSuccessPage() {
+  return (
+    <Suspense>
+      <PopupSuccessInner />
+    </Suspense>
+  );
 }
