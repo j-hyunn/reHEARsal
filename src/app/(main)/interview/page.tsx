@@ -3,6 +3,7 @@ import { getUserDocuments } from "@/lib/supabase/queries/documents";
 import { getUserSessions } from "@/lib/supabase/queries/sessions";
 import StartInterviewButton from "@/components/common/StartInterviewButton";
 import SessionTable from "@/components/interview/SessionTable";
+import NoResumeDialog from "@/components/interview/NoResumeDialog";
 
 export default async function InterviewPage() {
   const user = await getUser();
@@ -29,6 +30,8 @@ export default async function InterviewPage() {
         </div>
         <StartInterviewButton hasResume={hasResume} documents={documents} />
       </div>
+
+      {!hasResume && <NoResumeDialog />}
 
       {/* Interview history */}
       {sessions.length === 0 ? (

@@ -52,11 +52,6 @@ export default function DocumentSection({
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-sm font-semibold">{title}</h2>
-            {required && (
-              <Badge className="text-xs bg-accent text-primary hover:bg-accent">
-                필수
-              </Badge>
-            )}
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
         </div>

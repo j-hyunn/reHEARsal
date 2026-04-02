@@ -25,7 +25,6 @@ export default async function ResumePage() {
         type="resume"
         title="이력서 / 경력기술서"
         description="PDF · 최대 10MB"
-        required
         documents={resumes}
       />
 
