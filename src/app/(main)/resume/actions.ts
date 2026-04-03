@@ -22,10 +22,13 @@ const MAX_SIZE_BYTES: Record<DocumentType, number> = {
 
 export interface ActionResult {
   error?: string;
+  documentId?: string;
+  storagePath?: string;
 }
 
 export async function uploadDocumentAction(
-  formData: FormData
+  formData: FormData,
+  options?: { skipRevalidate?: boolean }
 ): Promise<ActionResult> {
   const user = await getUser();
   if (!user) return { error: "로그인이 필요합니다. 다시 로그인해주세요." };
@@ -120,12 +123,13 @@ export async function uploadDocumentAction(
     }
   }
 
-  revalidatePath("/resume");
-  return {};
+  if (!options?.skipRevalidate) revalidatePath("/resume");
+  return { documentId: doc.id, storagePath };
 }
 
 export async function saveGitLinkAction(
-  gitUrl: string
+  gitUrl: string,
+  options?: { skipRevalidate?: boolean }
 ): Promise<ActionResult> {
   const user = await getUser();
   if (!user) return { error: "로그인이 필요합니다. 다시 로그인해주세요." };
@@ -195,8 +199,8 @@ export async function saveGitLinkAction(
     }
   }
 
-  revalidatePath("/resume");
-  return {};
+  if (!options?.skipRevalidate) revalidatePath("/resume");
+  return { documentId: doc.id, storagePath: "" };
 }
 
 export async function deleteDocumentAction(

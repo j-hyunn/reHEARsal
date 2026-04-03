@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Link2Icon, PencilIcon, CheckIcon, XIcon, PlusIcon } from "lucide-react";
+import { Link2Icon, Loader2Icon, PencilIcon, CheckIcon, XIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +19,6 @@ function GitLinkItem({ document }: { document: UserDocument }) {
 
   function handleSave() {
     startTransition(async () => {
-      // Delete old + create new
       const deleteResult = await deleteDocumentAction(document.id, "");
       if (deleteResult.error) {
         toast.error(deleteResult.error);
@@ -47,27 +46,39 @@ function GitLinkItem({ document }: { document: UserDocument }) {
 
   if (isEditing) {
     return (
-      <div className="flex gap-2">
-        <Input
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          disabled={isPending}
-          autoFocus
-        />
-        <Button size="sm" onClick={handleSave} disabled={isPending}>
-          <CheckIcon className="size-4" />
-          <span className="sr-only">저장</span>
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => { setValue(document.file_url ?? ""); setIsEditing(false); }}
-          disabled={isPending}
-        >
-          <XIcon className="size-4" />
-          <span className="sr-only">취소</span>
-        </Button>
-      </div>
+      <>
+        {isPending && (
+          <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+            <Loader2Icon className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm font-medium">문서를 분석 중이에요...</p>
+            <p className="text-xs text-muted-foreground text-center max-w-[220px]">
+              문서 분석은 업로드 시 1회만 진행됩니다.
+              <br />잠시만 기다려주세요.
+            </p>
+          </div>
+        )}
+        <div className="flex gap-2">
+          <Input
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            disabled={isPending}
+            autoFocus
+          />
+          <Button size="sm" onClick={handleSave} disabled={isPending}>
+            <CheckIcon className="size-4" />
+            <span className="sr-only">저장</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => { setValue(document.file_url ?? ""); setIsEditing(false); }}
+            disabled={isPending}
+          >
+            <XIcon className="size-4" />
+            <span className="sr-only">취소</span>
+          </Button>
+        </div>
+      </>
     );
   }
 
@@ -108,71 +119,19 @@ function GitLinkItem({ document }: { document: UserDocument }) {
 }
 
 export default function GitLinkSection({ documents }: GitLinkSectionProps) {
-  const [isAdding, setIsAdding] = useState(false);
-  const [value, setValue] = useState("");
-  const [isPending, startTransition] = useTransition();
-
-  function handleAdd() {
-    startTransition(async () => {
-      const result = await saveGitLinkAction(value);
-      if (result.error) {
-        toast.error(result.error);
-      } else {
-        toast.success("GitHub 링크가 추가되었습니다.");
-        setValue("");
-        setIsAdding(false);
-      }
-    });
-  }
-
   return (
     <section className="space-y-3">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-sm font-semibold">GitHub</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            GitHub 레포지토리 링크
-          </p>
-        </div>
-        {!isAdding && (
-          <Button variant="outline" size="sm" onClick={() => setIsAdding(true)}>
-            <PlusIcon className="size-3.5" />
-            링크 추가
-          </Button>
-        )}
+      <div>
+        <h2 className="text-sm font-semibold">GitHub</h2>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          GitHub 레포지토리 링크
+        </p>
       </div>
-
       <div className="space-y-2">
         {documents.map((doc) => (
           <GitLinkItem key={doc.id} document={doc} />
         ))}
-
-        {isAdding && (
-          <div className="flex gap-2">
-            <Input
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              placeholder="https://github.com/username"
-              disabled={isPending}
-              autoFocus
-            />
-            <Button size="sm" onClick={handleAdd} disabled={isPending}>
-              <CheckIcon className="size-4" />
-              <span className="sr-only">추가</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => { setValue(""); setIsAdding(false); }}
-              disabled={isPending}
-            >
-              <XIcon className="size-4" />
-              <span className="sr-only">취소</span>
-            </Button>
-          </div>
-        )}
-
-        {documents.length === 0 && !isAdding && (
+        {documents.length === 0 && (
           <div className="flex items-center justify-center rounded-lg border border-dashed py-8 text-sm text-muted-foreground">
             GitHub 링크를 추가해보세요
           </div>

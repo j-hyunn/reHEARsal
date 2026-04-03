@@ -1,5 +1,6 @@
 import { getUser } from "@/lib/supabase/auth.server";
 import { getUserDocuments } from "@/lib/supabase/queries/documents";
+import ResumePageHeader from "@/components/resume/ResumePageHeader";
 import DocumentSection from "@/components/resume/DocumentSection";
 import GitLinkSection from "@/components/resume/GitLinkSection";
 
@@ -14,12 +15,7 @@ export default async function ResumePage() {
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6 space-y-10">
-      <div>
-        <h1 className="text-xl font-semibold">문서 관리</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          업로드된 문서는 모의 인터뷰에서 활용할 수 있습니다.
-        </p>
-      </div>
+      <ResumePageHeader />
 
       <DocumentSection
         type="resume"
