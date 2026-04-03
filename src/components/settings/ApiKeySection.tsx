@@ -267,7 +267,7 @@ export default function ApiKeySection({
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => handleOpenChange(false)}>
+            <Button variant="ghost" onClick={() => handleOpenChange(false)}>
               취소
             </Button>
             <Button onClick={handleSave} disabled={saving}>

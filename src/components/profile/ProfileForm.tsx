@@ -133,9 +133,9 @@ export default function ProfileForm({ profile }: Props) {
         </Select>
       </div>
 
-      {/* 기술 스택 */}
+      {/* Hard Skills */}
       <div className="space-y-2">
-        <label className="text-sm font-medium">기술 스택</label>
+        <label className="text-sm font-medium">Hard Skills</label>
         <p className="text-xs text-muted-foreground">
           입력 후 Enter를 눌러 추가하세요.
         </p>
@@ -174,9 +174,9 @@ export default function ProfileForm({ profile }: Props) {
         </div>
       </div>
 
-      {/* 스킬 */}
+      {/* Soft Skills */}
       <div className="space-y-2">
-        <label className="text-sm font-medium">스킬</label>
+        <label className="text-sm font-medium">Soft Skills</label>
         <p className="text-xs text-muted-foreground">
           입력 후 Enter를 눌러 추가하세요.
         </p>
