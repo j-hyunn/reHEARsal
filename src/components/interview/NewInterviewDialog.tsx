@@ -60,7 +60,7 @@ export default function NewInterviewDialog({
   const [githubIds, setGithubIds] = useState<string[]>([]);
 
   // Duration
-  const [duration, setDuration] = useState<"1" | "30" | "60" | "90" | "">("");
+  const [duration, setDuration] = useState<"30" | "60" | "90" | "">("");
 
   // Persona
   const [persona, setPersona] = useState<"explorer" | "pressure" | "">("");
@@ -188,12 +188,11 @@ export default function NewInterviewDialog({
               면접 시간
               <span className="ml-1 text-xs text-primary font-normal">*필수</span>
             </label>
-            <Select value={duration} onValueChange={(v) => setDuration(v as "1" | "30" | "60" | "90")}>
+            <Select value={duration} onValueChange={(v) => setDuration(v as "30" | "60" | "90")}>
               <SelectTrigger>
                 <SelectValue placeholder="면접 시간을 선택하세요" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="1">1분 (테스트)</SelectItem>
                 <SelectItem value="30">30분</SelectItem>
                 <SelectItem value="60">60분</SelectItem>
                 <SelectItem value="90">90분</SelectItem>
