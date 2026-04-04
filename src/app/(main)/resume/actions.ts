@@ -69,6 +69,7 @@ export async function uploadDocumentAction(
   let parsedText = "";
   try {
     const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "";
     const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) });
     const pdfDoc = await loadingTask.promise;
     const textParts: string[] = [];
