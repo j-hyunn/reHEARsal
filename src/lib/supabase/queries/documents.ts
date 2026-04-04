@@ -20,6 +20,7 @@ export interface CreateDocumentInput {
   file_url: string
   file_name: string
   parsed_text: string
+  normalized_text?: string
 }
 
 /**

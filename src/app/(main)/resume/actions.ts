@@ -6,7 +6,6 @@ import { getUser } from "@/lib/supabase/auth.server";
 import {
   createDocument,
   deleteDocument,
-  updateNormalizedText,
 } from "@/lib/supabase/queries/documents";
 import type { DocumentType } from "@/lib/supabase/queries/documents";
 import { buildNormalizePrompt } from "@/lib/prompts/normalize";
@@ -69,7 +68,11 @@ export async function uploadDocumentAction(
   let parsedText = "";
   try {
     const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
-    pdfjsLib.GlobalWorkerOptions.workerSrc = "";
+    const { join } = await import("path");
+    pdfjsLib.GlobalWorkerOptions.workerSrc = join(
+      process.cwd(),
+      "node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs"
+    );
     const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) });
     const pdfDoc = await loadingTask.promise;
     const textParts: string[] = [];
@@ -88,15 +91,8 @@ export async function uploadDocumentAction(
     parsedText = "";
   }
 
-  const doc = await createDocument({
-    user_id: user.id,
-    type,
-    file_url: storagePath,
-    file_name: file.name,
-    parsed_text: parsedText,
-  });
-
   // 정규화 에이전트 — 실패해도 업로드는 성공으로 처리
+  let normalizedText: string | undefined;
   if (parsedText) {
     try {
       const prompt = buildNormalizePrompt(parsedText, type);
@@ -114,15 +110,21 @@ export async function uploadDocumentAction(
         const data = await res.json() as {
           candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
         };
-        const normalized = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-        if (normalized) {
-          await updateNormalizedText(doc.id, normalized);
-        }
+        normalizedText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
       }
     } catch (e) {
       console.error("[normalize error]", e);
     }
   }
+
+  const doc = await createDocument({
+    user_id: user.id,
+    type,
+    file_url: storagePath,
+    file_name: file.name,
+    parsed_text: parsedText,
+    normalized_text: normalizedText,
+  });
 
   if (!options?.skipRevalidate) revalidatePath("/resume");
   return { documentId: doc.id, storagePath };
@@ -164,15 +166,8 @@ export async function saveGitLinkAction(
     parsedText = "";
   }
 
-  const doc = await createDocument({
-    user_id: user.id,
-    type: "git",
-    file_url: trimmed,
-    file_name: trimmed,
-    parsed_text: parsedText,
-  });
-
   // 정규화 에이전트 — 실패해도 저장은 성공으로 처리
+  let normalizedText: string | undefined;
   if (parsedText) {
     try {
       const prompt = buildNormalizePrompt(parsedText, "git");
@@ -190,15 +185,21 @@ export async function saveGitLinkAction(
         const data = await res.json() as {
           candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
         };
-        const normalized = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-        if (normalized) {
-          await updateNormalizedText(doc.id, normalized);
-        }
+        normalizedText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
       }
     } catch (e) {
       console.error("[normalize error]", e);
     }
   }
+
+  const doc = await createDocument({
+    user_id: user.id,
+    type: "git",
+    file_url: trimmed,
+    file_name: trimmed,
+    parsed_text: parsedText,
+    normalized_text: normalizedText,
+  });
 
   if (!options?.skipRevalidate) revalidatePath("/resume");
   return { documentId: doc.id, storagePath: "" };
