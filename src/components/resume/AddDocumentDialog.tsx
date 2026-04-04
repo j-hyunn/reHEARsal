@@ -159,6 +159,7 @@ export default function AddDocumentDialog({ open, onOpenChange }: AddDocumentDia
     if (errors.length > 0) {
       toast.error(errors[0]);
     } else {
+      uploadedDocsRef.current = [];
       router.refresh();
       toast.success("문서가 추가되었습니다.");
       handleClose();
