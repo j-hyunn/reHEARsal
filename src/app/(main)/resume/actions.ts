@@ -203,6 +203,10 @@ export async function saveGitLinkAction(
   return { documentId: doc.id, storagePath: "" };
 }
 
+export async function revalidateDocumentsAction(): Promise<void> {
+  revalidatePath("/resume");
+}
+
 export async function deleteDocumentAction(
   documentId: string,
   storagePath: string

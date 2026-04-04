@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { CheckIcon, Loader2Icon, UploadIcon, XIcon, PlusIcon } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -13,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { uploadDocumentAction, saveGitLinkAction, deleteDocumentAction } from "@/app/(main)/resume/actions";
+import { uploadDocumentAction, saveGitLinkAction, deleteDocumentAction, revalidateDocumentsAction } from "@/app/(main)/resume/actions";
 
 interface AddDocumentDialogProps {
   open: boolean;
@@ -32,7 +31,6 @@ const KIND_LABEL: Record<UploadStep["kind"], string> = {
 };
 
 export default function AddDocumentDialog({ open, onOpenChange }: AddDocumentDialogProps) {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [uploadSteps, setUploadSteps] = useState<UploadStep[]>([]);
   const [currentStepIndex, setCurrentStepIndex] = useState(-1);
@@ -160,7 +158,7 @@ export default function AddDocumentDialog({ open, onOpenChange }: AddDocumentDia
       toast.error(errors[0]);
     } else {
       uploadedDocsRef.current = [];
-      router.refresh();
+      await revalidateDocumentsAction();
       toast.success("문서가 추가되었습니다.");
       handleClose();
     }
